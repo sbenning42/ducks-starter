@@ -14,6 +14,7 @@ import { PageContactComponent } from './pages/page-contact/page-contact.componen
 import { PageAboutComponent } from './pages/page-about/page-about.component';
 import { Ducks } from 'src/ducks/ducks';
 import { StorageDuck } from 'src/ducks/storage/storage.duck';
+import { AppDuck } from 'src/ducks/app/app.duck';
 
 @NgModule({
   declarations: [
@@ -34,7 +35,8 @@ import { StorageDuck } from 'src/ducks/storage/storage.duck';
   ],
   providers: [
     Ducks,
-    StorageDuck
+    StorageDuck,
+    AppDuck,
   ],
   bootstrap: [AppComponent]
 })

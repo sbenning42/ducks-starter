@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Duck, baseActionSchemaAsyncConfig, responseOf } from '../ducks';
+import { Duck, baseActionSchemaAsyncConfig, responseOf, BaseSchema, Ducks } from '../ducks';
 import { defer, timer, of, throwError } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
@@ -14,8 +14,7 @@ export interface StorageState {
   loaded: boolean;
   entries: StorageEntries;
 }
-export interface StorageSchema {
-  [key: string]: { payload: any; result: any };
+export interface StorageSchema extends BaseSchema {
   getStorage: {
     payload: { keys: string[] } | void;
     result: { entries: StorageEntries, _payload: StorageSchema['getStorage']['payload'] }
@@ -92,7 +91,7 @@ function asyncClear(storage: StorageDuck) {
 
 @Injectable()
 export class StorageDuck extends Duck<StorageState, { storage: 'storage' }, StorageSchema> {
-  constructor() {
+  constructor(ducks: Ducks) {
     const selector: 'storage' = 'storage';
     const state = { loaded: false, entries: null };
     const schema = {
@@ -102,5 +101,6 @@ export class StorageDuck extends Duck<StorageState, { storage: 'storage' }, Stor
       clearStorage: { ...baseActionSchemaAsyncConfig(), reduce: reduceClear, async: asyncClear }
     };
     super({ selector, state, schema });
+    ducks.registerDuck(this);
   }
 }
