@@ -12,6 +12,8 @@ import { PageHomeComponent } from './pages/page-home/page-home.component';
 import { PageNotFoundComponent } from './pages/page-not-found/page-not-found.component';
 import { PageContactComponent } from './pages/page-contact/page-contact.component';
 import { PageAboutComponent } from './pages/page-about/page-about.component';
+import { Ducks } from 'src/ducks/ducks';
+import { StorageDuck } from 'src/ducks/storage/storage.duck';
 
 @NgModule({
   declarations: [
@@ -30,7 +32,10 @@ import { PageAboutComponent } from './pages/page-about/page-about.component';
     MaestroModule,
     StoresModule
   ],
-  providers: [],
+  providers: [
+    Ducks,
+    StorageDuck
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

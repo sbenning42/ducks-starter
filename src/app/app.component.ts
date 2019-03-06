@@ -1,9 +1,10 @@
 import { Component } from '@angular/core';
 import { Observable } from 'rxjs';
 import { MaestroFacade } from 'src/maestro/store/maestro.facade';
-import { AppStoreConfig } from './stores/app/app.store-config';
 import { BaseStore } from 'src/maestro/factories/base-store-m';
-import { tap } from 'rxjs/operators';
+import { Ducks } from 'src/ducks/ducks';
+import { StorageDuck } from 'src/ducks/storage/storage.duck';
+
 
 @Component({
   selector: 'app-root',
@@ -20,19 +21,16 @@ export class AppComponent {
 
   constructor(
     public maestro: MaestroFacade,
-    public appStoreConfig: AppStoreConfig
+    public ducks: Ducks,
+    public storage: StorageDuck
   ) {
     this.initialize();
   }
 
   initialize() {
-    this.maestro.registerStoreConfig(this.appStoreConfig);
-    this.app = this.maestro.getStore('app');
-    this.ready$ = this.app.ready$;
-    this.loading$ = this.app.loading$.pipe(tap(c => console.log('loading: ', c)));
-    this.loadingData$ = this.app.loadingData$;
-    this.error$ = this.app.error$;
-    this.app.initialize();
+    this.ducks.registerDuck(this.storage);
+    // this.storage.actions.getStorage.dispatch();
+    this.storage.actions.saveStorage.dispatch({ entries: { test: 'Tested !!!' } });
   }
 
 
