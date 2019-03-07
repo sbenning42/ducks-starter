@@ -101,6 +101,6 @@ export class AppDuck extends Duck<AppState, AppSelector, AppSchema> {
         },
       },
     });
-    // ducks.registerDuck(this);
+    ducks.registerDuck(this);
   }
 }

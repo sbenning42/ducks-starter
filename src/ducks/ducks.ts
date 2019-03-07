@@ -77,8 +77,8 @@ export interface DuckAction<S, SE, SCH extends BaseSchema, ASCH extends { payloa
   type: string;
   meta: ActionDMeta<ASCH['payload']>;
   effects: EffectsType;
-  factory: (payload: ASCH['payload'], meta?: ActionDMeta<any>) => ActionD<ASCH['payload']>;
-  dispatch: (payload: ASCH['payload'], meta?: ActionDMeta<any>) => void;
+  factory: (payload?: ASCH['payload'], meta?: ActionDMeta<any>) => ActionD<ASCH['payload']>;
+  dispatch: (payload?: ASCH['payload'], meta?: ActionDMeta<any>) => void;
   reduce: (type: string, state: S, payload: ASCH['payload'] & ASCH['result']) => S;
   async?: (duck: Duck<S, SE, SCH>) => (payload: ASCH['payload']) => Observable<ASCH['result']>;
 }
@@ -136,8 +136,8 @@ export abstract class BaseDuck<S, SE, SCH extends BaseSchema> implements BaseDuc
           meta: getMeta(action),
           reduce: action.reduce || ((_, state: S) => state),
           async: action.async,
-          factory: (payload: any, meta?: ActionDMeta<any>) => new ActionDFactory(action.key).create(payload, meta || getMeta(action)),
-          dispatch: (payload: any, meta?: ActionDMeta<any>) => this.store.dispatch(
+          factory: (payload?: any, meta?: ActionDMeta<any>) => new ActionDFactory(action.key).create(payload, meta || getMeta(action)),
+          dispatch: (payload?: any, meta?: ActionDMeta<any>) => this.store.dispatch(
             new ActionDFactory(action.key).create(payload, meta || getMeta(action))
           ),
         }
@@ -152,6 +152,9 @@ export class Duck<S, SE = { anonymous }, AS extends BaseSchema = {}> extends Bas
   constructor(config: BaseDuckConfig<S, SE, AS>) {
     super(config);
   }
+  dispatch(action: ActionD<any>) {
+    this.store.dispatch(action);
+  }
 }
 
 export function baseActionSchemaConfig(duckTracking: boolean = false) {
@@ -164,6 +167,15 @@ export function baseActionSchemaAsyncConfig(
   loadingData: { content: string } = { content: '' }
 ) {
   return { duckTracking, isAsync: true, isLoading, loadingData };
+}
+
+export function getAsynced(request: any, exactType: string = '') {
+  const origin = request.type.split('$')[0];
+  const accept = exactType ? [exactType] : [responseOf(origin), cancelOf(origin), errorOf(origin)];
+  const refId = request.asyncId ? request.asyncId : request.id;
+  return (actions$: Observable<any>) => actions$.pipe(
+    filter((dest: any) => accept.includes(dest.type) && dest.asyncId === refId),
+  );
 }
 
 @Injectable()
@@ -191,24 +203,30 @@ export class Ducks {
       action.effects = action.effects ? action.effects : {};
       action.effects[`${action.type}Request$`] = defer(() => this.actions$.pipe(
         ofType(action.type),
-        map((thisAction: ActionD<any>) => ({ type: requestOf(action.type), payload: thisAction.payload })),
+        map((thisAction: ActionD<any>) => ({ type: requestOf(action.type), payload: thisAction.payload, asyncId: thisAction.id })),
       ));
       action.effects[`${action.type}Async$`] = defer(() => this.actions$.pipe(
         ofType(requestOf(action.type)),
-        concatMap((request: ActionD<any>) => action.async(duck)(request.payload).pipe(
+        concatMap((request: any) => action.async(duck)(request.payload).pipe(
           take(1),
-          map((result: any) => ({ type: responseOf(action.type), payload: { _payload: request.payload, ...result } })),
-          catchError((error: Error) => of({ type: errorOf(action.type), payload: { _payload: request.payload, ...error } })),
-          takeUntil(this.actions$.pipe(ofType(cancelOf(action.type)))),
+          map((result: any) => ({ type: responseOf(action.type), payload: { _payload: request.payload, ...result }, asyncId: request.asyncId })),
+          catchError((error: Error) => of({ type: errorOf(action.type), payload: { _payload: request.payload, ...error, asyncId: request.asyncId } })),
+          takeUntil(this.actions$.pipe(getAsynced(request, cancelOf(action.type)))),
         ))
       ));
       Effect({ dispatch: true })(action.effects, `${action.type}Async$`);
       Effect({ dispatch: true })(action.effects, `${action.type}Request$`);
     });
-    this.effectsManager.addEffects(
-      Object.values(duck.actions)
-        .map(action => action.effects)
-        .reduce((allEffects, actionEffects) => ({ ...allEffects, ...actionEffects }), {})
-    );
+  }
+  start() {
+    const effectsAggregat = Object.values(this.ducks)
+      .map((duck: Duck<any, any, any>) => Object.values(duck.actions)
+        .map((action) => action.effects)
+        .reduce((aggregat, effect) => ({ ...aggregat, ...effect }), {}))
+      .reduce((allEffects, effects) => ({ ...allEffects, ...effects }), {});
+    this.effectsManager.addEffects(effectsAggregat);
+  }
+  asyncFinish(action: ActionD<any>, exactType: string = ''): Observable<any> {
+    return this.actions$.pipe(getAsynced(action, exactType));
   }
 }
