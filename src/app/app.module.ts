@@ -12,9 +12,11 @@ import { PageHomeComponent } from './pages/page-home/page-home.component';
 import { PageNotFoundComponent } from './pages/page-not-found/page-not-found.component';
 import { PageContactComponent } from './pages/page-contact/page-contact.component';
 import { PageAboutComponent } from './pages/page-about/page-about.component';
-import { Ducks } from 'src/ducks/ducks';
-import { StorageDuck } from 'src/ducks/storage/storage.duck';
-import { AppDuck } from 'src/ducks/app/app.duck';
+import { StoreModule } from '@ngrx/store';
+import { EffectsModule } from '@ngrx/effects';
+import { StoreRouterConnectingModule } from '@ngrx/router-store';
+import { StoreDevtoolsModule } from '@ngrx/store-devtools';
+import { STModule } from './st/st.module';
 
 @NgModule({
   declarations: [
@@ -30,14 +32,13 @@ import { AppDuck } from 'src/ducks/app/app.duck';
     FormsModule,
     ReactiveFormsModule,
     RouterModule.forRoot(appRoutes),
-    MaestroModule,
-    StoresModule
+    StoreModule.forRoot({}),
+    EffectsModule.forRoot([]),
+    StoreDevtoolsModule.instrument({ maxAge: 25 }),
+    StoreRouterConnectingModule.forRoot(),
+    STModule
   ],
-  providers: [
-    Ducks,
-    StorageDuck,
-    AppDuck,
-  ],
+  providers: [],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
