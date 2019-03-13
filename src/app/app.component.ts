@@ -1,13 +1,6 @@
 import { Component } from '@angular/core';
-<<<<<<< HEAD
-import { Observable } from 'rxjs';
-import { AppDuck } from 'src/ducks/app/app.duck';
-import { StorageDuck, StorageEntries } from 'src/ducks/storage/storage.duck';
-import { filter, first } from 'rxjs/operators';
-import { Ducks } from '../ducks/ducks';
-=======
 import { Observable, merge, timer, throwError, of, defer } from 'rxjs';
-import { tap, first, map, switchMap } from 'rxjs/operators';
+import { tap, first, map, switchMap, filter, withLatestFrom, take } from 'rxjs/operators';
 import { STService } from './st/services/st.service';
 import { ActionST } from './st/interfaces/action-st';
 import {
@@ -18,15 +11,8 @@ import {
   asyncCanceledOfST,
   asyncCancelFactoryST
 } from './st/operators/handle-async-req-res-correlation-st';
-import { ActionFactoryST } from './st/classes/action-factory-st';
-import { ActionCorrelationFactoryST } from './st/classes/action-correlation-factory-st';
-import { AsyncReqResCorrelationController } from './st/classes/async-req-res-correlation-controller-st';
+import { StorageService } from './services/storage/storage.service';
 
-const TEST1_TYPE = '[Test ST] Test 1';
-const async = (payload: { test: string }) => () => Math.random() < 0.9
-  ? throwError(new Error('Random'))
-  : of({ data: { tested: `${payload.test} => Tested !!!` } });
->>>>>>> 322cc0195a11d5ac27e53f50425bfa0165fc59f4
 
 @Component({
   selector: 'app-root',
@@ -40,27 +26,19 @@ export class AppComponent {
   loading$: Observable<boolean>;
   loadingData$: Observable<any[]>;
   error$: Observable<Error[]>;
-
+/*
   test1Factory = this.st.createActionFactory<{ test: string }, { data: { tested: string } }>(
     TEST1_TYPE, [], (payload: { test: string }) => timer(2500).pipe(switchMap(async(payload)))
   );
-
+*/
   constructor(
-<<<<<<< HEAD
-    public app: AppDuck,
-    public storage: StorageDuck,
-    public ducks: Ducks
-=======
-    public st: STService
->>>>>>> 322cc0195a11d5ac27e53f50425bfa0165fc59f4
+    public st: STService,
+    public storageService: StorageService
   ) {
-    this.storage();
+    this.registerStoreStorage();
   }
-
-<<<<<<< HEAD
   initialize() {
     // Make Ducks to register all registered duck's action effects 
-    this.ducks.start();
 
     /*
   
@@ -75,17 +53,9 @@ export class AppComponent {
 
     */
 
-    const getStorage = this.storage.actions.getStorage.factory();
-    const finish$ = this.ducks.asyncFinish(getStorage);
-
-    finish$.subscribe((withValue: any) => {
-      console.log('Get Storage finish with value: ', withValue);
-    });
-
-    this.storage.dispatch(getStorage);
-=======
+/*
   storage() {
-    class StorageService {
+    class StorageService2 {
       get(): Observable<any> {
         return defer(() => {
           const entries = {};
@@ -131,7 +101,7 @@ export class AppComponent {
       };
       constructor(
         public st: STService,
-        public storage: StorageService
+        public storage: StorageService2
       ) {
         interface StorageState {
           loaded: boolean;
@@ -182,8 +152,8 @@ export class AppComponent {
       }
     }
 
-    const storageService = new StorageService;
-    const storageFacade = new StorageFacade(this.st, storageService);
+    const storageService2 = new StorageService2;
+    const storageFacade = new StorageFacade(this.st, storageService2);
 
     storageFacade.actions.clearStorage.dispatch();
 
@@ -289,7 +259,66 @@ export class AppComponent {
 
     this.st.store.dispatch(test1);
     setTimeout(() => this.st.store.dispatch(asyncCancelFactoryST(test1)), 1000);
->>>>>>> 322cc0195a11d5ac27e53f50425bfa0165fc59f4
+*/
+  }
+
+  registerStoreStorage() {
+    enum StorageActionType {
+      get = '[Storage Action Type] Get',
+      save = '[Storage Action Type] Save',
+      remove = '[Storage Action Type] Remove',
+      clear = '[Storage Action Type] Clear',
+    }
+    interface StorageState {
+      loaded: boolean;
+      entries: any;
+    }
+    interface StorageActionSchemas {
+      get: [void, Object];
+      save: [Object, Object];
+      remove: [string[], string[]];
+      clear: [void, Object];
+      [key: string]: [any, any?];
+    }
+    const storageStore = this.st.rawStoreFactory<StorageState, StorageActionSchemas>({
+      selector: 'storage',
+      initialState: {
+        loaded: false,
+        entries: null,
+      },
+      actions: {
+        get: { type: StorageActionType.get, correlations: ['async'] },
+        save: { type: StorageActionType.save, correlations: ['async'] },
+        remove: { type: StorageActionType.remove, correlations: ['async'] },
+        clear: { type: StorageActionType.clear, correlations: ['async'] }
+      },
+      reducers: {
+        [`${StorageActionType.get} @ Resolved`]: { loaded: () => true, entries: (state, action) => action.payload },
+        [`${StorageActionType.save} @ Resolved`]: { entries: (state, action) => ({ ...state.entries, ...action.payload }) },
+        [`${StorageActionType.clear} @ Resolved`]: { entries: () => ({}) },
+        [`${StorageActionType.remove} @ Resolved`]: {
+          entries: (state, action) => ({
+            ...Object.entries(state.entries)
+              .filter(([key]) => !action.payload.includes(key))
+              .reduce((entries: any, [key, entry]) => ({ ...entries, [key]: entry }), {}),
+          })
+        },
+      }
+    });
+
+    const get = storageStore.factories.get();
+    const { id } = get.correlations.find(correlation => correlation.type === 'async');
+    const finish$ = this.st.actions$.pipe(
+      filter((action: any) => action.correlations && action.correlations.length > 0),
+      map((action: any) => action.correlations.find((correlation: { type: string, id: string }) => correlation.type === 'async')),
+      filter((correlation: { type: string, id: string }) => correlation && correlation.id === id),
+      withLatestFrom(storageStore.selectors.loaded.pipe(filter(loaded => loaded), switchMap(() => storageStore.selectors.entries))),
+      first(),
+    );
+    finish$.pipe(
+    ).subscribe(([, entries]) => !entries.firstVisit ? storageStore.dispatch.save({ test: 'Hello Dev !!!' }) : undefined);
+
+    this.st.store.dispatch(get);
   }
 
 }

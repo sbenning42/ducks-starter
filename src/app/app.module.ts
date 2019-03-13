@@ -17,6 +17,7 @@ import { EffectsModule } from '@ngrx/effects';
 import { StoreRouterConnectingModule } from '@ngrx/router-store';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import { STModule } from './st/st.module';
+import { StorageService } from './services/storage/storage.service';
 
 @NgModule({
   declarations: [
@@ -33,12 +34,16 @@ import { STModule } from './st/st.module';
     ReactiveFormsModule,
     RouterModule.forRoot(appRoutes),
     StoreModule.forRoot({}),
-    EffectsModule.forRoot([]),
+    EffectsModule.forRoot([
+      StorageService
+    ]),
     StoreDevtoolsModule.instrument({ maxAge: 25 }),
     StoreRouterConnectingModule.forRoot(),
     STModule
   ],
-  providers: [],
+  providers: [
+    StorageService
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
