@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Store, ReducerManager } from '@ngrx/store';
+import { Store, ReducerManager, select, createSelector } from '@ngrx/store';
 import { Actions } from '@ngrx/effects';
 import { Observable } from 'rxjs';
 import { AsyncReqResConfigST } from '../interfaces/async-req-res-config-st';
@@ -9,6 +9,7 @@ import { ActionFactoryST } from '../classes/action-factory-st';
 import { AsyncReqResCorrelationController } from '../classes/async-req-res-correlation-controller-st';
 import { ActionST } from '../interfaces/action-st';
 import { allCorrelatedST } from '../operators/all-correlated-st';
+import { RawStoreST, ActionPayloadResult, RawStoreConfigST } from '../classes/raw-store-st';
 
 @Injectable()
 export class STService {
@@ -112,6 +113,10 @@ export class STService {
       return newState !== state[actionReducer.key] ? { ...state, [actionReducer.key]: newState } : state;
     });
     return actions;
+  }
+
+  rawStoreFactory<S, AS extends ActionPayloadResult>(config: RawStoreConfigST<S, AS>): RawStoreST<S, AS> {
+    return new RawStoreST<S, AS>(config, this.store);
   }
 
 }

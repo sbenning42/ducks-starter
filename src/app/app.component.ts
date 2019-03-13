@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { Observable, merge, timer, throwError, of, defer } from 'rxjs';
-import { tap, first, map, switchMap } from 'rxjs/operators';
+import { tap, first, map, switchMap, filter, withLatestFrom, take } from 'rxjs/operators';
 import { STService } from './st/services/st.service';
 import { ActionST } from './st/interfaces/action-st';
 import {
@@ -14,6 +14,7 @@ import {
 import { ActionFactoryST } from './st/classes/action-factory-st';
 import { ActionCorrelationFactoryST } from './st/classes/action-correlation-factory-st';
 import { AsyncReqResCorrelationController } from './st/classes/async-req-res-correlation-controller-st';
+import { StorageService } from './services/storage/storage.service';
 
 const TEST1_TYPE = '[Test ST] Test 1';
 const async = (payload: { test: string }) => () => Math.random() < 0.9
@@ -32,19 +33,20 @@ export class AppComponent {
   loading$: Observable<boolean>;
   loadingData$: Observable<any[]>;
   error$: Observable<Error[]>;
-
+/*
   test1Factory = this.st.createActionFactory<{ test: string }, { data: { tested: string } }>(
     TEST1_TYPE, [], (payload: { test: string }) => timer(2500).pipe(switchMap(async(payload)))
   );
-
+*/
   constructor(
-    public st: STService
+    public st: STService,
+    public storageService: StorageService
   ) {
-    this.storage();
+    this.registerStoreStorage();
   }
-
+/*
   storage() {
-    class StorageService {
+    class StorageService2 {
       get(): Observable<any> {
         return defer(() => {
           const entries = {};
@@ -90,7 +92,7 @@ export class AppComponent {
       };
       constructor(
         public st: STService,
-        public storage: StorageService
+        public storage: StorageService2
       ) {
         interface StorageState {
           loaded: boolean;
@@ -141,8 +143,8 @@ export class AppComponent {
       }
     }
 
-    const storageService = new StorageService;
-    const storageFacade = new StorageFacade(this.st, storageService);
+    const storageService2 = new StorageService2;
+    const storageFacade = new StorageFacade(this.st, storageService2);
 
     storageFacade.actions.clearStorage.dispatch();
 
@@ -248,6 +250,66 @@ export class AppComponent {
 
     this.st.store.dispatch(test1);
     setTimeout(() => this.st.store.dispatch(asyncCancelFactoryST(test1)), 1000);
+  }
+*/
+
+  registerStoreStorage() {
+    enum StorageActionType {
+      get = '[Storage Action Type] Get',
+      save = '[Storage Action Type] Save',
+      remove = '[Storage Action Type] Remove',
+      clear = '[Storage Action Type] Clear',
+    }
+    interface StorageState {
+      loaded: boolean;
+      entries: any;
+    }
+    interface StorageActionSchemas {
+      get: [void, any];
+      save: [any, any];
+      remove: [string[], string[]];
+      clear: [void, any];
+      [key: string]: [any, any?];
+    }
+    const storageStore = this.st.rawStoreFactory<StorageState, StorageActionSchemas>({
+      selector: 'storage',
+      initialState: {
+        loaded: false,
+        entries: null,
+      },
+      actions: {
+        get: { type: StorageActionType.get, correlations: ['async'] },
+        save: { type: StorageActionType.save, correlations: ['async'] },
+        remove: { type: StorageActionType.remove, correlations: ['async'] },
+        clear: { type: StorageActionType.clear, correlations: ['async'] }
+      },
+      reducers: {
+        [`${StorageActionType.get} @ Resolved`]: { loaded: () => true, entries: (state, action) => action.payload },
+        [`${StorageActionType.save} @ Resolved`]: { entries: (state, action) => ({ ...state.entries, ...action.payload }) },
+        [`${StorageActionType.clear} @ Resolved`]: { entries: () => ({}) },
+        [`${StorageActionType.remove} @ Resolved`]: {
+          entries: (state, action) => ({
+            ...Object.entries(state.entries)
+              .filter(([key]) => !action.payload.includes(key))
+              .reduce((entries: any, [key, entry]) => ({ ...entries, [key]: entry }), {}),
+          })
+        },
+      }
+    });
+
+    const get = storageStore.factories.get();
+    const { id } = get.correlations.find(correlation => correlation.type === 'async');
+    const finish$ = this.st.actions$.pipe(
+      filter((action: any) => action.correlations && action.correlations.length > 0),
+      map((action: any) => action.correlations.find((correlation: { type: string, id: string }) => correlation.type === 'async')),
+      filter((correlation: { type: string, id: string }) => correlation && correlation.id === id),
+      withLatestFrom(storageStore.selectors.loaded.pipe(filter(loaded => loaded), switchMap(() => storageStore.selectors.entries))),
+      first(),
+    );
+    finish$.pipe(
+    ).subscribe(([, entries]) => !entries.firstVisit ? storageStore.dispatch.save({ test: 'Hello Dev !!!' }) : undefined);
+
+    this.st.store.dispatch(get);
   }
 
 }
