@@ -2,7 +2,7 @@ import { Observable, of, EMPTY, defer, concat } from 'rxjs';
 import { isST } from './is-st';
 import { initialCorrelatedTo } from './initial-correlated-to-st';
 import { AsyncReqResCorrelationController } from '../classes/async-req-res-correlation-controller-st';
-import { mergeMap, take, map, catchError, takeUntil, defaultIfEmpty } from 'rxjs/operators';
+import { mergeMap, take, map, catchError, takeUntil, defaultIfEmpty, filter, tap } from 'rxjs/operators';
 import { ActionST } from '../interfaces/action-st';
 import { ActionFactoryST } from '../classes/action-factory-st';
 import { ActionHeaderCorrelatedFactoryST } from '../classes/action-header-correlated-factory-st';
@@ -32,7 +32,7 @@ export class AsyncResolvedActionFactoryST<T> extends ActionFactoryST<T> {
       header: new ActionHeaderCorrelatedFactoryST({
         type: asyncResolvedOfST(request.type),
         correlationTypes: [AsyncReqResCorrelationController.type],
-        header: request.header
+        header: request.header ? request.header : request as any
       }),
       payload: response
     });
@@ -46,7 +46,7 @@ export class AsyncErroredActionFactoryST extends ActionFactoryST<{ error: Error 
       header: new ActionHeaderCorrelatedFactoryST({
         type: asyncErroredOfST(request.type),
         correlationTypes: [AsyncReqResCorrelationController.type],
-        header: request.header
+        header: request.header ? request.header : request as any
       }),
       payload: { error }
     });
@@ -60,7 +60,7 @@ export class AsyncCanceledActionFactoryST extends ActionFactoryST<undefined> {
       header: new ActionHeaderCorrelatedFactoryST({
         type: asyncCanceledOfST(request.type),
         correlationTypes: [AsyncReqResCorrelationController.type],
-        header: request.header
+        header: request.header ? request.header : request as any
       }),
       payload: undefined,
     });
@@ -74,7 +74,7 @@ export class AsyncRequestActionFactoryST<T = void> extends ActionFactoryST<T> {
       header: new ActionHeaderCorrelatedFactoryST({
         type: asyncRequestOfST(action.type),
         correlationTypes: [AsyncReqResCorrelationController.type],
-        header: action.header
+        header: action.header ? action.header : action as any
       }),
       payload: action.payload,
     });
@@ -87,7 +87,7 @@ export class AsyncCancelActionFactoryST extends ActionFactoryST<undefined> {
       header: new ActionHeaderCorrelatedFactoryST({
         type: asyncCancelOfST(action.type),
         correlationTypes: [AsyncReqResCorrelationController.type],
-        header: action.header
+        header: action.header ? action.header : action as any
       }),
       payload: undefined,
     });
@@ -122,8 +122,12 @@ export function handleAsyncReqResCorrelationST<P = void, R = void>(
     const resolveType = (type: string) => getAsyncResMap()[type] || empty;
     const asyncReqResCorrelation = (correlation: ActionCorrelationST) => correlation.type === AsyncReqResCorrelationController.type;
     return actions$.pipe(
-      isST(),
+      // isST(),
+      tap(action => console.log('0 here with: ', action)),
+      filter((action) => action.type && (action.correlations || (action.header && action.header.correlations))),
+      tap(action => console.log('1 here with: ', action)),
       initialCorrelatedTo(AsyncReqResCorrelationController.type),
+      tap(action => console.log('2 here with: ', action)),
       mergeMap((action: ActionST<P>) => concat(
         of(asyncRequestFactoryST(action)),
         resolveType(action.type)(action.payload).pipe(
@@ -131,7 +135,7 @@ export function handleAsyncReqResCorrelationST<P = void, R = void>(
           map((response: R) => asyncResolvedFactoryST(action, response)),
           catchError((error: Error) => of(asyncErroredFactoryST(action, error))),
           takeUntil(actions$.pipe(
-            allCorrelatedST(action.header.correlations.find(asyncReqResCorrelation)),
+            allCorrelatedST((action.header ? action.header : action as any).correlations.find(asyncReqResCorrelation)),
             ofType(asyncCancelOfST(action.type))
           )),
           defaultIfEmpty(asyncCanceledFactoryST(action))

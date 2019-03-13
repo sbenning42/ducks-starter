@@ -2,6 +2,7 @@ import { ActionCorrelationST } from '../interfaces/action-correlation-st';
 import { Observable } from 'rxjs';
 import { Store, select, createSelector } from '@ngrx/store';
 import { ActionCorrelationFactoryST } from './action-correlation-factory-st';
+import { AsyncReqResCorrelationController } from './async-req-res-correlation-controller-st';
 
 export interface ActionPayloadResult {
   [key: string]: [any, any?];
@@ -86,8 +87,8 @@ export class RawStoreST<S, AS extends ActionPayloadResult> {
         [name]: (payload?) => ({
           payload,
           type: actionConfig.type,
-          correlations: actionConfig.correlations
-            .map(correlation => new ActionCorrelationFactoryST({ type: correlation }))
+          correlations: (actionConfig.correlations || []).concat(actionConfig.async ? [AsyncReqResCorrelationController.type] : [])
+            .map(correlation => new ActionCorrelationFactoryST({ type: correlation, initial: true }))
         })
       }), {});
     this.dispatch = Object.entries(this.config.actions)

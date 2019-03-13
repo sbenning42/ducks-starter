@@ -11,40 +11,6 @@ export class StorageService {
 
   constructor(public actions$: Actions) { }
 
-  @Effect({ dispatch: true })
-  get$ = this.actions$.pipe(
-    ofType('[Storage Action Type] Get'),
-    mergeMap((action: { type: string, correlations: ActionCorrelationST[] }) => this.get().pipe(
-      map((payload: any) => ({
-        payload,
-        type: '[Storage Action Type] Get @ Resolved',
-        correlations: [action.correlations.find(correlation => correlation.type === 'async')]
-      })),
-      catchError((error: Error) => of({
-        payload: error,
-        type: '[Storage Action Type] Get @ Errored',
-        correlations: [action.correlations.find(correlation => correlation.type === 'async')]
-      })),
-    ))
-  );
-
-  @Effect({ dispatch: true })
-  save$ = this.actions$.pipe(
-    ofType('[Storage Action Type] Save'),
-    mergeMap((action: { type: string, payload: any, correlations: ActionCorrelationST[] }) => this.save(action.payload).pipe(
-      map((payload: any) => ({
-        payload,
-        type: '[Storage Action Type] Save @ Resolved',
-        correlations: [action.correlations.find(correlation => correlation.type === 'async')]
-      })),
-      catchError((error: Error) => of({
-        payload: error,
-        type: '[Storage Action Type] Save @ Errored',
-        correlations: [action.correlations.find(correlation => correlation.type === 'async')]
-      })),
-    ))
-  );
-
   get(): Observable<any> {
     return defer(() => {
       const entries = {};

@@ -110,13 +110,17 @@ export class STService {
       }
       const actionReducer = actionReducers[action.type];
       const newState = actionReducer.reduce(state[actionReducer.key], action);
-      return newState !== state[actionReducer.key] ? { ...state, [actionReducer.key]: newState } : state;
+      return newState !== state[actionReducer.key] ? { ...(state as Object), [actionReducer.key]: newState } : state;
     });
     return actions;
   }
 
   rawStoreFactory<S, AS extends ActionPayloadResult>(config: RawStoreConfigST<S, AS>): RawStoreST<S, AS> {
-    return new RawStoreST<S, AS>(config, this.store);
+    const store = new RawStoreST<S, AS>(config, this.store);
+    Object.entries(config.actions).forEach(([name, description]) => description.async
+      ? this.registerAsyncReqRes({ type: description.type, async: description.async as (payload: AS[string][0]) => Observable<AS[string][1]> } )
+      : undefined);
+    return store;
   }
 
 }

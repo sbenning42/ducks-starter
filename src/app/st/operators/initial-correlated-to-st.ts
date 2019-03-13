@@ -9,6 +9,6 @@ export function initialCorrelatedTo(type: string) {
     correlation.type === thisType && correlation.initial === true;
   return (actions$: Observable<any>) => actions$.pipe(
     isST(),
-    filter((action: ActionST<any>) => action.header.correlations.some(isInitialCorrelatedTo(type)))
+    filter((action: ActionST<any>) => action.header ? action.header.correlations.some(isInitialCorrelatedTo(type)) : (action as any).correlations.some(isInitialCorrelatedTo(type)))
   );
 }

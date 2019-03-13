@@ -12,6 +12,7 @@ import {
   asyncCancelFactoryST
 } from './st/operators/handle-async-req-res-correlation-st';
 import { StorageService } from './services/storage/storage.service';
+import { AsyncReqResCorrelationController } from './st/classes/async-req-res-correlation-controller-st';
 
 
 @Component({
@@ -287,10 +288,10 @@ export class AppComponent {
         entries: null,
       },
       actions: {
-        get: { type: StorageActionType.get, correlations: ['async'] },
-        save: { type: StorageActionType.save, correlations: ['async'] },
-        remove: { type: StorageActionType.remove, correlations: ['async'] },
-        clear: { type: StorageActionType.clear, correlations: ['async'] }
+        get: { type: StorageActionType.get, async: () => this.storageService.get() },
+        save: { type: StorageActionType.save, async: (entries: any) => this.storageService.save(entries) },
+        remove: { type: StorageActionType.remove, async: (keys: string[]) => this.storageService.remove(keys) },
+        clear: { type: StorageActionType.clear, async: () => this.storageService.clear() }
       },
       reducers: {
         [`${StorageActionType.get} @ Resolved`]: { loaded: () => true, entries: (state, action) => action.payload },
@@ -307,10 +308,10 @@ export class AppComponent {
     });
 
     const get = storageStore.factories.get();
-    const { id } = get.correlations.find(correlation => correlation.type === 'async');
+    const { id } = get.correlations.find(correlation => correlation.type === AsyncReqResCorrelationController.type);
     const finish$ = this.st.actions$.pipe(
       filter((action: any) => action.correlations && action.correlations.length > 0),
-      map((action: any) => action.correlations.find((correlation: { type: string, id: string }) => correlation.type === 'async')),
+      map((action: any) => action.correlations.find((correlation: { type: string, id: string }) => correlation.type === AsyncReqResCorrelationController.type)),
       filter((correlation: { type: string, id: string }) => correlation && correlation.id === id),
       withLatestFrom(storageStore.selectors.loaded.pipe(filter(loaded => loaded), switchMap(() => storageStore.selectors.entries))),
       first(),
