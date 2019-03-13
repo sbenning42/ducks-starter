@@ -16,8 +16,8 @@ export interface RawAction<K extends keyof AS, AS extends ActionPayloadResult> {
 export interface RawActionConfig<K extends keyof AS, AS extends ActionPayloadResult> {
   type: string;
   correlations?: string[];
-  sync?: (payload: ActionPayload<K, AS>) => ActionSyncResult<K, AS>;
-  async?: (payload: ActionPayload<K, AS>) => ActionAsyncResult<K, AS>;
+  sync?: ActionPayload<K, AS> extends void ? (() => ActionSyncResult<K, AS>) : ((payload: ActionPayload<K, AS>) => ActionSyncResult<K, AS>);
+  async?: ActionPayload<K, AS> extends void ? (() => ActionAsyncResult<K, AS>) : ((payload: ActionPayload<K, AS>) => ActionAsyncResult<K, AS>);
 }
 
 export type ActionPayload<K extends keyof AS, AS extends ActionPayloadResult> = AS[K][0] extends {} ? AS[K][0] : void;
@@ -31,10 +31,7 @@ export interface RawStoreConfigST<S, AS extends ActionPayloadResult> {
     [K in keyof AS]: RawActionConfig<K, AS>;
   };
   reducers?: {
-    [K in this['actions'][keyof AS]['type']]: { [PROP in keyof Partial<S>]: (state: S, action: RawAction<any, AS>) => S[PROP] };
-  };
-  reducers2?: {
-    [K in keyof this['actions'][keyof AS]['type']]: { [PROP in keyof S]: (state: S[PROP], action: RawAction<any, AS>) => S[PROP] };
+    [key: string]: { [PROP in keyof Partial<S>]: (state: S, action: RawAction<any, AS>) => S[PROP] };
   };
   reduce?<K extends keyof AS>(state: S, action: RawAction<K, AS>): S;
 }
@@ -45,23 +42,23 @@ export class RawStoreST<S, AS extends ActionPayloadResult> {
   private reducer: <K extends keyof AS>(state: S, action: RawAction<K, AS>) => S;
   selectors: { [K in keyof S]: Observable<S[K]> };
   factories: {
-    [K in keyof AS]: (payload: ActionPayload<K, AS>) => RawAction<K, AS>;
+    [K in keyof AS]: ActionPayload<K, AS> extends void ? (() => RawAction<K, AS>) : ((payload: ActionPayload<K, AS>) => RawAction<K, AS>);
   };
   dispatch: {
-    [K in keyof AS]: (payload: ActionPayload<K, AS>) => void;
+    [K in keyof AS]: ActionPayload<K, AS> extends void ? (() => void) : ((payload: ActionPayload<K, AS>) => void);
   };
 
   constructor(private config: RawStoreConfigST<S, AS>, private store: Store<any>) {
     this.doUglyInit();
   }
 
-  private createReducer(config: RawStoreConfigST<S, AS>): <K extends keyof AS>(state: S, action: RawAction<K, AS>) => S {
+  private createReducer<S extends Object>(config: RawStoreConfigST<S, AS>): <K extends keyof AS>(state: S, action: RawAction<K, AS>) => S {
     return <K extends keyof AS>(state: S = config.initialState, action: RawAction<K, AS>) => ({
-      ...state,
+      ...(state as object),
       ...(config.reducers[action.type] ? Object.entries(config.reducers[action.type]).reduce((
         partial: Partial<S>,
         [prop, reducer]: [string, (state: S, action: RawAction<any, AS>) => S[any]]
-      ) => ({ ...partial, [prop]: reducer(state, action) }), {}) : {}),
+      ) => ({ ...(partial as any), [prop]: reducer(state, action) }), {}) : {}),
     });
   }
 
@@ -86,7 +83,7 @@ export class RawStoreST<S, AS extends ActionPayloadResult> {
     this.factories = Object.entries(this.config.actions)
       .reduce((factories: any, [name, actionConfig]: [string, RawActionConfig<any, AS>]) => ({
         ...factories,
-        [name]: (payload: any) => ({
+        [name]: (payload?) => ({
           payload,
           type: actionConfig.type,
           correlations: actionConfig.correlations
@@ -96,7 +93,7 @@ export class RawStoreST<S, AS extends ActionPayloadResult> {
     this.dispatch = Object.entries(this.config.actions)
       .reduce((factories: any, [name]: [string, RawActionConfig<any, AS>]) => ({
         ...factories,
-        [name]: (payload: any) => this.store.dispatch(this.factories[name](payload))
+        [name]: <P>(payload: P) => this.store.dispatch((this.factories[name] as any)(payload))
       }), {});
   }
 }
