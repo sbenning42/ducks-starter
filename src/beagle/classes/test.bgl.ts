@@ -8,6 +8,8 @@ import { AsyncActionFactoryBGL, makeResolvedTypeBGL } from './async-actions-fact
 import { Actions, ofType } from '@ngrx/effects';
 import { mergeMap, filter, map } from 'rxjs/operators';
 import { ActionBGL } from './action-bgl';
+import { StorageService } from 'src/app/services/storage/storage.service';
+import * as uuid from 'uuid/v4';
 
 /** In those exemple, interfaces are defined to simplify generics type definitions. */
 
@@ -27,6 +29,8 @@ interface ActionsSchema extends SchemaBGL {
   action1: [AsyncActionPayload, AsyncActionResult];
   action2: [AsyncActionPayload, AsyncActionResult];
   action3: [AsyncActionPayload, AsyncActionResult];
+  get: [undefined, AsyncActionResult];
+  save: [AsyncActionPayload, AsyncActionResult];
 }
 
 @Injectable()
@@ -37,8 +41,14 @@ export class TestBGL {
     action1: AsyncActionFactoryBGL<AsyncActionPayload, AsyncActionResult>;
     action2: AsyncActionFactoryBGL<AsyncActionPayload, AsyncActionResult>;
     action3: AsyncActionFactoryBGL<AsyncActionPayload, AsyncActionResult>;
+    get: AsyncActionFactoryBGL<undefined, AsyncActionResult>;
+    save: AsyncActionFactoryBGL<AsyncActionPayload, AsyncActionResult>;
   };
-  constructor(public store: Store<any>, public actions$: Actions) {
+  constructor(
+    public store: Store<any>,
+    public actions$: Actions,
+    public storage: StorageService,
+  ) {
   }
 
   test() {
@@ -93,7 +103,13 @@ export class TestBGL {
     const action3 = new ActionConfigBGL<AsyncActionPayload, AsyncActionResult>(
       'action 3', ['async'], payload => of({ tested: `[3]: ${payload.test} tested !!!` })
     );
-    this.factories = beagle.createActionFactories<ActionsSchema>({ sync, async, action1, action2, action3 });
+    const get = new ActionConfigBGL<undefined, AsyncActionResult>(
+      'get storage', ['async'], () => this.storage.get().pipe(map(result => ({ tested: result })))
+    );
+    const save = new ActionConfigBGL<AsyncActionPayload, AsyncActionResult>(
+      'save storage', ['async'], payload => this.storage.save(payload).pipe(map(result => ({ tested: result })))
+    );
+    this.factories = beagle.createActionFactories<ActionsSchema>({ sync, async, action1, action2, action3, get, save });
 
     this.factories.sync.dispatch({ test: 'Hello Beagle !!!' });
     const asyncRequestAction = this.factories.async.createRequest({ test: 'Hello Async Beagle !!!' });
@@ -103,10 +119,12 @@ export class TestBGL {
     beagle.createAsyncEffect(action1, this.factories.action1);
     beagle.createAsyncEffect(action2, this.factories.action2);
     beagle.createAsyncEffect(action3, this.factories.action3);
+    beagle.createAsyncEffect(get, this.factories.get);
+    beagle.createAsyncEffect(save, this.factories.save);
 
-    const asyncActionLificycle$ = beagle.asyncLifecycle(asyncRequestAction);
+    const asyncActionLifecycle$ = beagle.asyncLifecycle(asyncRequestAction);
 
-    asyncActionLificycle$.subscribe(console.log, () => {}, () => console.log('Complete !'));
+    asyncActionLifecycle$.subscribe(console.log, () => {}, () => console.log('Complete !'));
 
     console.log(asyncRequestAction, asyncCancelAction);
 
@@ -153,5 +171,10 @@ export class TestBGL {
 
     beagle.store.dispatch(action1Request);
 
+    const getAction = this.factories.get.createRequest(undefined);
+    beagle.store.dispatch(getAction);
+    this.factories.save.dispatchRequest({ test: uuid() });
+
+    setTimeout(() => this.factories.get.dispatchCancel(getAction), 2000);
   }
 }

@@ -38,7 +38,7 @@ export class AppComponent {
     public storageService: StorageService
   ) {
     // this.registerStoreStorage();
-    const test = new TestBGL(this.st.store, this.st.actions$);
+    const test = new TestBGL(this.st.store, this.st.actions$, this.storageService);
     test.test();
   }
   initialize() {

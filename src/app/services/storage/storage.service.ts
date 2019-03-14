@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { Observable, defer, of } from 'rxjs';
+import { Observable, defer, of, timer } from 'rxjs';
 import { Effect, Actions, ofType } from '@ngrx/effects';
-import { mergeMap, map, catchError } from 'rxjs/operators';
+import { mergeMap, map, catchError, switchMap } from 'rxjs/operators';
 import { ActionCorrelationST } from 'src/app/st/interfaces/action-correlation-st';
 
 @Injectable({
@@ -12,14 +12,14 @@ export class StorageService {
   constructor(public actions$: Actions) { }
 
   get(): Observable<any> {
-    return defer(() => {
+    return timer(2500).pipe(switchMap(() => defer(() => {
       const entries = {};
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         entries[key] = JSON.parse(localStorage.getItem(key));
       }
       return of(entries);
-    });
+    })));
   }
   save(entries: any): Observable<any> {
     Object.entries(entries).forEach(([key, value]) => localStorage.setItem(key, JSON.stringify(value)));
