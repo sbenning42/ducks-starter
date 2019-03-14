@@ -80,9 +80,9 @@ export class Beagle {
 
   asyncLifecycle<Payload, Result>(request: ActionBGL<Payload>) {
     const isAFinishType = (type: string) => [
-      makeResolvedTypeBGL(request.type.split('@')[0].trim()),
-      makeErroredTypeBGL(request.type.split('@')[0].trim()),
-      makeCanceledTypeBGL(request.type.split('@')[0].trim()),
+      makeResolvedTypeBGL(request.type),
+      makeErroredTypeBGL(request.type),
+      makeCanceledTypeBGL(request.type),
     ].includes(type);
     const isAsyncCorrelation = (action: ActionBGL<any>) => action.correlations.find(correlation => correlation.type === 'async');
     const grabAsyncCorrelation = (action: ActionBGL<any>) => action.correlations.find(correlation => correlation.type === 'async');
@@ -92,12 +92,12 @@ export class Beagle {
       && grabAsyncCorrelation(action1).id === grabAsyncCorrelation(action2).id;
     return this.actions$.pipe(
       ofType(
-        makeRequestTypeBGL(request.type.split('@')[0].trim()),
-        makeCancelTypeBGL(request.type.split('@')[0].trim()),
-        makeRetryTypeBGL(request.type.split('@')[0].trim()),
-        makeResolvedTypeBGL(request.type.split('@')[0].trim()),
-        makeErroredTypeBGL(request.type.split('@')[0].trim()),
-        makeCanceledTypeBGL(request.type.split('@')[0].trim()),
+        makeRequestTypeBGL(request.type),
+        makeCancelTypeBGL(request.type),
+        makeRetryTypeBGL(request.type),
+        makeResolvedTypeBGL(request.type),
+        makeErroredTypeBGL(request.type),
+        makeCanceledTypeBGL(request.type),
       ),
       filter((action: ActionBGL<Payload | Result | undefined>) => compareAsyncCorrelation(request, action)),
       mergeMap((action: ActionBGL<Payload | Result | undefined>) => isAFinishType(action.type) ? [action, null] : [action]),

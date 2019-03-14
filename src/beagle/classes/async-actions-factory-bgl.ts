@@ -2,24 +2,69 @@ import { ActionConfigBGL } from './action-config-bgl';
 import { ActionBGL } from './action-bgl';
 import { CorrelationBGL } from './correlation-bgl';
 import { Store } from '@ngrx/store';
+import { Observable } from 'rxjs';
+import { ofType } from '@ngrx/effects';
 
-export function makeRequestTypeBGL(type: string): string {
+export function makeRequestTypeBGL(rawType: string): string {
+  const type = rawType.includes('@') ? rawType.split('@')[0].trim() : rawType;
   return `${type} @ Request`;
 }
-export function makeCancelTypeBGL(type: string): string {
+export function makeCancelTypeBGL(rawType: string): string {
+  const type = rawType.includes('@') ? rawType.split('@')[0].trim() : rawType;
   return `${type} @ Cancel`;
 }
-export function makeRetryTypeBGL(type: string): string {
+export function makeRetryTypeBGL(rawType: string): string {
+  const type = rawType.includes('@') ? rawType.split('@')[0].trim() : rawType;
   return `${type} @ Retry`;
 }
-export function makeResolvedTypeBGL(type: string): string {
+export function makeResolvedTypeBGL(rawType: string): string {
+  const type = rawType.includes('@') ? rawType.split('@')[0].trim() : rawType;
   return `${type} @ Resolved`;
 }
-export function makeErroredTypeBGL(type: string): string {
+export function makeErroredTypeBGL(rawType: string): string {
+  const type = rawType.includes('@') ? rawType.split('@')[0].trim() : rawType;
   return `${type} @ Errored`;
 }
-export function makeCanceledTypeBGL(type: string): string {
+export function makeCanceledTypeBGL(rawType: string): string {
+  const type = rawType.includes('@') ? rawType.split('@')[0].trim() : rawType;
   return `${type} @ Canceled`;
+}
+
+export function ofRequestType(rawType: string) {
+  const type = rawType.includes('@') ? rawType.split('@')[0].trim() : rawType;
+  return <A extends { type: string }>(actions$: Observable<A>) => actions$.pipe(
+    ofType(makeRequestTypeBGL(type)),
+  );
+}
+export function ofCancelType(rawType: string) {
+  const type = rawType.includes('@') ? rawType.split('@')[0].trim() : rawType;
+  return <A extends { type: string }>(actions$: Observable<A>) => actions$.pipe(
+    ofType(makeCancelTypeBGL(type)),
+  );
+}
+export function ofRetryType(rawType: string) {
+  const type = rawType.includes('@') ? rawType.split('@')[0].trim() : rawType;
+  return <A extends { type: string }>(actions$: Observable<A>) => actions$.pipe(
+    ofType(makeRetryTypeBGL(type)),
+  );
+}
+export function ofResolvedType(rawType: string) {
+  const type = rawType.includes('@') ? rawType.split('@')[0].trim() : rawType;
+  return <A extends { type: string }>(actions$: Observable<A>) => actions$.pipe(
+    ofType(makeResolvedTypeBGL(type)),
+  );
+}
+export function ofErroredType(rawType: string) {
+  const type = rawType.includes('@') ? rawType.split('@')[0].trim() : rawType;
+  return <A extends { type: string }>(actions$: Observable<A>) => actions$.pipe(
+    ofType(makeErroredTypeBGL(type)),
+  );
+}
+export function ofCanceledType(rawType: string) {
+  const type = rawType.includes('@') ? rawType.split('@')[0].trim() : rawType;
+  return <A extends { type: string }>(actions$: Observable<A>) => actions$.pipe(
+    ofType(makeCanceledTypeBGL(type)),
+  );
 }
 
 

@@ -4,7 +4,7 @@ import { Beagle, SchemaBGL } from './beagle';
 import { Store } from '@ngrx/store';
 import { Injectable } from '@angular/core';
 import { ActionFactoryBGL } from './action-factory-bgl';
-import { AsyncActionFactoryBGL, makeResolvedTypeBGL } from './async-actions-factory-bgl';
+import { AsyncActionFactoryBGL, makeResolvedTypeBGL, ofResolvedType } from './async-actions-factory-bgl';
 import { Actions, ofType } from '@ngrx/effects';
 import { mergeMap, filter, map } from 'rxjs/operators';
 import { ActionBGL } from './action-bgl';
@@ -132,16 +132,16 @@ export class TestBGL {
 
     const action1Request = this.factories.action1.createRequest({ test: 'action 1' });
     const effect1$ = beagle.asyncLifecycle(action1Request).pipe(
-      ofType(makeResolvedTypeBGL(action1.type)),
+      ofResolvedType(action1Request.type),
       mergeMap((action1Resolved: ActionBGL<AsyncActionResult>) => {
         const action2Request = this.factories.action2.createRequest({ test: action1Resolved.payload.tested });
         return concat(
           of(action2Request),
           beagle.asyncLifecycle(action2Request).pipe(
-            ofType(makeResolvedTypeBGL(action2.type)),
-            mergeMap((action2Resolved: ActionBGL<AsyncActionResult>) => of(
+            ofResolvedType(action2Request.type),
+            map((action2Resolved: ActionBGL<AsyncActionResult>) =>
               this.factories.action3.createRequest({ test: action2Resolved.payload.tested })
-            )),
+            ),
           )
         );
       })
@@ -149,15 +149,15 @@ export class TestBGL {
 
 
     const effect2$ = beagle.asyncLifecycle(action1Request).pipe(
-      ofType(makeResolvedTypeBGL(action1.type)),
+      ofResolvedType(action1Request.type),
       mergeMap((action1Resolved: ActionBGL<AsyncActionResult>) => {
         const action2Request = this.factories.action2.createRequest({ test: action1Resolved.payload.tested });
         const action3Request = this.factories.action3.createRequest({ test: action1Resolved.payload.tested });
         return concat(
           from([action2Request, action3Request]),
           zip(
-            beagle.asyncLifecycle(action2Request).pipe(ofType(makeResolvedTypeBGL(action2.type))),
-            beagle.asyncLifecycle(action3Request).pipe(ofType(makeResolvedTypeBGL(action3.type))),
+            beagle.asyncLifecycle(action2Request).pipe(ofResolvedType(action2Request.type)),
+            beagle.asyncLifecycle(action3Request).pipe(ofResolvedType(action3Request.type)),
           ).pipe(
             map(([action2Resolved, action3Resolved]: [ActionBGL<AsyncActionResult>, ActionBGL<AsyncActionResult>]) =>
               this.factories.sync.create({ test: `${action2Resolved.payload.tested} | ${action3Resolved.payload.tested}` })
@@ -167,7 +167,10 @@ export class TestBGL {
       }),
     );
 
-    merge(effect1$, effect2$).pipe(filter(action => !!action)).subscribe(action => beagle.store.dispatch(action));
+    merge(
+      effect1$,
+      effect2$,
+    ).subscribe(action => beagle.store.dispatch(action));
 
     beagle.store.dispatch(action1Request);
 
