@@ -8,7 +8,7 @@ export class STEffects {
   constructor(
     public st: STService
   ) { }
-  @Effect({ dispatch: true })
+  // @Effect({ dispatch: true })
   asyncReqResCorrelation$ = this.st.actions$.pipe(
     handleAsyncReqResCorrelationST<any, any>(this.st.getAsyncReqResMapGetter()),
   );

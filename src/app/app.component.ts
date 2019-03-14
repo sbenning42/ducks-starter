@@ -13,6 +13,7 @@ import {
 } from './st/operators/handle-async-req-res-correlation-st';
 import { StorageService } from './services/storage/storage.service';
 import { AsyncReqResCorrelationController } from './st/classes/async-req-res-correlation-controller-st';
+import { TestBGL } from 'src/beagle/classes/test.bgl';
 
 
 @Component({
@@ -36,13 +37,15 @@ export class AppComponent {
     public st: STService,
     public storageService: StorageService
   ) {
-    this.registerStoreStorage();
+    // this.registerStoreStorage();
+    const test = new TestBGL(this.st.store, this.st.actions$);
+    test.test();
   }
   initialize() {
-    // Make Ducks to register all registered duck's action effects 
+    // Make Ducks to register all registered duck's action effects
 
     /*
-  
+
     this.storage.actions.getStorage.dispatch();
     this.storage.selectors.entries.pipe(
       filter((entries: StorageEntries) => !!entries),
