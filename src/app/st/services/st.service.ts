@@ -118,7 +118,10 @@ export class STService {
   rawStoreFactory<S, AS extends ActionPayloadResult>(config: RawStoreConfigST<S, AS>): RawStoreST<S, AS> {
     const store = new RawStoreST<S, AS>(config, this.store);
     Object.entries(config.actions).forEach(([name, description]) => description.async
-      ? this.registerAsyncReqRes({ type: description.type, async: description.async as (payload: AS[string][0]) => Observable<AS[string][1]> } )
+      ? this.registerAsyncReqRes({
+        type: description.type,
+        async: description.async as (payload: AS[string][0]) => Observable<AS[string][1]>
+      })
       : undefined);
     return store;
   }
