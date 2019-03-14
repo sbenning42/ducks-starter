@@ -314,7 +314,9 @@ export class AppComponent {
     const { id } = get.correlations.find(correlation => correlation.type === AsyncReqResCorrelationController.type);
     const finish$ = this.st.actions$.pipe(
       filter((action: any) => action.correlations && action.correlations.length > 0),
-      map((action: any) => action.correlations.find((correlation: { type: string, id: string }) => correlation.type === AsyncReqResCorrelationController.type)),
+      map((action: any) => action.correlations
+        .find((correlation: { type: string, id: string }) => correlation.type === AsyncReqResCorrelationController.type)
+      ),
       filter((correlation: { type: string, id: string }) => correlation && correlation.id === id),
       withLatestFrom(storageStore.selectors.loaded.pipe(filter(loaded => loaded), switchMap(() => storageStore.selectors.entries))),
       first(),
