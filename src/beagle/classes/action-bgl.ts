@@ -6,8 +6,6 @@ export abstract class ActionBGL<Payload> {
   id: string = uuid();
   correlations: CorrelationBGL[];
   constructor(public payload: Payload, correlations: (string | CorrelationBGL)[] = []) {
-    this.correlations = correlations.length === 0 || typeof (correlations[0]) !== 'string'
-      ? correlations as CorrelationBGL[]
-      : correlations.map(correlation => new CorrelationBGL(correlation as string));
+    this.correlations = correlations.map(correlation => typeof(correlation) === 'string' ? new CorrelationBGL(correlation) : correlation);
   }
 }

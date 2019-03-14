@@ -24,7 +24,7 @@ interface AsyncActionResult {
 }
 
 interface ActionsSchema extends SchemaBGL {
-  sync: [SyncActionPayload];
+  sync: [SyncActionPayload, void];
   async: [AsyncActionPayload, AsyncActionResult];
   action1: [AsyncActionPayload, AsyncActionResult];
   action2: [AsyncActionPayload, AsyncActionResult];
@@ -95,7 +95,7 @@ export class TestBGL {
       'asyncAction', ['async'], payload => of({ tested: `${payload.test} tested !!!` })
     );
     const action1 = new ActionConfigBGL<AsyncActionPayload, AsyncActionResult>(
-      'action 1', ['async'], payload => of({ tested: `[1]: ${payload.test} tested !!!` })
+      'action 1', ['async', 'effect1', 'effect2'], payload => of({ tested: `[1]: ${payload.test} tested !!!` })
     );
     const action2 = new ActionConfigBGL<AsyncActionPayload, AsyncActionResult>(
       'action 2', ['async'], payload => of({ tested: `[2]: ${payload.test} tested !!!` })
@@ -134,13 +134,14 @@ export class TestBGL {
     const effect1$ = beagle.asyncLifecycle(action1Request).pipe(
       ofResolvedType(action1Request.type),
       mergeMap((action1Resolved: ActionBGL<AsyncActionResult>) => {
-        const action2Request = this.factories.action2.createRequest({ test: action1Resolved.payload.tested });
+        const effect1Correlation = action1Request.correlations.find(correlation => correlation.type === 'effect1');
+        const action2Request = this.factories.action2.createRequest({ test: action1Resolved.payload.tested }, [effect1Correlation]);
         return concat(
           of(action2Request),
           beagle.asyncLifecycle(action2Request).pipe(
             ofResolvedType(action2Request.type),
             map((action2Resolved: ActionBGL<AsyncActionResult>) =>
-              this.factories.action3.createRequest({ test: action2Resolved.payload.tested })
+              this.factories.action3.createRequest({ test: action2Resolved.payload.tested }, [effect1Correlation])
             ),
           )
         );
@@ -151,8 +152,9 @@ export class TestBGL {
     const effect2$ = beagle.asyncLifecycle(action1Request).pipe(
       ofResolvedType(action1Request.type),
       mergeMap((action1Resolved: ActionBGL<AsyncActionResult>) => {
-        const action2Request = this.factories.action2.createRequest({ test: action1Resolved.payload.tested });
-        const action3Request = this.factories.action3.createRequest({ test: action1Resolved.payload.tested });
+        const effect2Correlation = action1Request.correlations.find(correlation => correlation.type === 'effect2');
+        const action2Request = this.factories.action2.createRequest({ test: action1Resolved.payload.tested }, [effect2Correlation]);
+        const action3Request = this.factories.action3.createRequest({ test: action1Resolved.payload.tested }, [effect2Correlation]);
         return concat(
           from([action2Request, action3Request]),
           zip(
@@ -160,7 +162,7 @@ export class TestBGL {
             beagle.asyncLifecycle(action3Request).pipe(ofResolvedType(action3Request.type)),
           ).pipe(
             map(([action2Resolved, action3Resolved]: [ActionBGL<AsyncActionResult>, ActionBGL<AsyncActionResult>]) =>
-              this.factories.sync.create({ test: `${action2Resolved.payload.tested} | ${action3Resolved.payload.tested}` })
+              this.factories.sync.create({ test: `${action2Resolved.payload.tested} | ${action3Resolved.payload.tested}` }, [effect2Correlation])
             ),
           )
         );
@@ -169,7 +171,7 @@ export class TestBGL {
 
     merge(
       effect1$,
-      effect2$,
+      // effect2$,
     ).subscribe(action => beagle.store.dispatch(action));
 
     beagle.store.dispatch(action1Request);
