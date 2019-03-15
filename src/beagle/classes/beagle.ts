@@ -11,9 +11,11 @@ import {
   makeCanceledTypeBGL
 } from './async-actions-factory-bgl';
 import { ActionFactoryBGL } from './action-factory-bgl';
-import { of } from 'rxjs';
+import { of, Observable } from 'rxjs';
 import { ActionBGL } from './action-bgl';
+import { RawStoreConfigBGL } from './raw-store-config-bgl';
 import { mergeMap, take, map, catchError, takeUntil, defaultIfEmpty, filter, takeWhile } from 'rxjs/operators';
+import { RawStoreBGL } from './raw-store-bgl';
 
 export interface SchemaBGL {
   [key: string]: [any] | [any, any];
@@ -25,7 +27,7 @@ export class Beagle {
     public actions$: Actions,
   ) { }
 
-  private _createAsyncEffect<Payload, Result extends Object>(
+  private createAsyncEffect<Payload, Result extends Object>(
     config: ActionConfigBGL<Payload, Result>,
     factory: AsyncActionFactoryBGL<Payload, Result>
   ) {
@@ -38,17 +40,20 @@ export class Beagle {
         defaultIfEmpty(factory.createCanceled(request)),
         take(1)
       ))
-    );
+    ).subscribe(action => this.store.dispatch(action));
   }
 
   createActionFactory<Payload, Result extends (Object|void) = void>(
     config: ActionConfigBGL<Payload, Result>
   ): Result extends void ? ActionFactoryBGL<Payload> : AsyncActionFactoryBGL<Payload, Result> {
-    return (config.correlations.some(correlation => correlation === 'async')
-      ? new AsyncActionFactoryBGL(config, this.store)
-      : new ActionFactoryBGL(config, this.store)) as Result extends void
-        ? ActionFactoryBGL<Payload>
-        : AsyncActionFactoryBGL<Payload, Result>;
+    const async = config.correlations.some(correlation => correlation === 'async');
+    const factory = async ? new AsyncActionFactoryBGL(config, this.store) : new ActionFactoryBGL(config, this.store);
+    if (async) {
+      this.createAsyncEffect<Payload, any>(config, factory as AsyncActionFactoryBGL<Payload, Result>);
+    }
+    return factory as Result extends void
+      ? ActionFactoryBGL<Payload>
+      : AsyncActionFactoryBGL<Payload, Result>;
   }
 
   createActionFactories<Schema extends SchemaBGL>(
@@ -69,13 +74,6 @@ export class Beagle {
           ? ActionFactoryBGL<Schema[Key][0]>
           : AsyncActionFactoryBGL<Schema[Key][0], Schema[Key][1]>;
         };
-  }
-
-  createAsyncEffect<Payload, Result extends Object>(
-    config: ActionConfigBGL<Payload, Result>,
-    factory: AsyncActionFactoryBGL<Payload, Result>
-  ) {
-    this._createAsyncEffect(config, factory).subscribe(action => this.store.dispatch(action));
   }
 
   asyncLifecycle<Payload, Result>(request: ActionBGL<Payload>) {
@@ -103,5 +101,30 @@ export class Beagle {
       mergeMap((action: ActionBGL<Payload | Result | undefined>) => isAFinishType(action.type) ? [action, null] : [action]),
       takeWhile((action) => !!action)
     );
+  }
+
+  createRawStore<State>(config: RawStoreConfigBGL<State>) {
+    return new RawStoreBGL<State>(config, this.store);
+  }
+
+  createFeatureStore<State, Schema extends SchemaBGL>(
+    actionsConfigs: { [Key in keyof Schema]: ActionConfigBGL<Schema[Key][0], Schema[Key][1] extends undefined ? void : Schema[Key][1]> },
+    storeConfig: RawStoreConfigBGL<State>,
+  ): RawStoreBGL<State> & {
+    actions: {
+        [Key in keyof Schema]: (Schema[Key][1] extends undefined ? void : Schema[Key][1]) extends void
+            ? ActionFactoryBGL<Schema[Key][0]>
+            : AsyncActionFactoryBGL<Schema[Key][0], Schema[Key][1]>;
+    }
+  } {
+    const store = this.createRawStore<State>(storeConfig);
+    const actions = this.createActionFactories<Schema>(actionsConfigs);
+    return { ...store, actions } as RawStoreBGL<State> & {
+      actions: {
+          [Key in keyof Schema]: (Schema[Key][1] extends undefined ? void : Schema[Key][1]) extends void
+              ? ActionFactoryBGL<Schema[Key][0]>
+              : AsyncActionFactoryBGL<Schema[Key][0], Schema[Key][1]>;
+      }
+    };
   }
 }

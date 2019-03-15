@@ -1,8 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, defer, of, timer } from 'rxjs';
-import { Effect, Actions, ofType } from '@ngrx/effects';
-import { mergeMap, map, catchError, switchMap } from 'rxjs/operators';
-import { ActionCorrelationST } from 'src/app/st/interfaces/action-correlation-st';
+import { Actions } from '@ngrx/effects';
+import { switchMap } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'

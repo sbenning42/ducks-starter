@@ -10,6 +10,7 @@ import { mergeMap, filter, map } from 'rxjs/operators';
 import { ActionBGL } from './action-bgl';
 import { StorageService } from 'src/app/services/storage/storage.service';
 import * as uuid from 'uuid/v4';
+import { RawStoreConfigBGL } from './raw-store-config-bgl';
 
 /** In those exemple, interfaces are defined to simplify generics type definitions. */
 
@@ -55,6 +56,56 @@ export class TestBGL {
     /** Instanciate Beagle singleton */
     const beagle = new Beagle(this.store, this.actions$);
 
+    interface TestState {
+      test: string;
+      tested: boolean;
+    }
+    interface TestPayload {
+      test: string;
+    }
+    interface TestSchema extends SchemaBGL {
+      test: [TestPayload, void],
+      test2: [TestPayload, void],
+    }
+
+    const feature = beagle.createFeatureStore<TestState, TestSchema>(
+      {
+        test: new ActionConfigBGL('test', [], payload => console.log(payload)),
+        test2: new ActionConfigBGL('test2', [], payload => console.log(payload)),
+      },
+      new RawStoreConfigBGL('test', { test: null, tested: false }, (state, action: ActionBGL<TestPayload>) => {
+        switch (action.type) {
+          case 'test':
+            return { ...state, tested: true, test: action.payload.test };
+          case 'test2':
+            return { ...state, tested: true, test: `${state.test ? state.test : 'First'} @ ${action.payload.test}` };
+          default:
+            return state;
+        }
+      }),
+    );
+
+    feature.selectors.test.subscribe(console.log);
+    feature.actions.test2.dispatch({ test: 'HI' });
+    feature.actions.test2.dispatch({ test: 'HI RE' });
+
+    /**
+     * [
+        {
+          type: 'test', updates: [
+            { prop: 'test', reducer: (state, action: ActionBGL<{ test: string }>) => action.payload.test },
+            { prop: 'tested', reducer: () => true },
+          ]
+        },
+        {
+          type: 'test2', updates: [
+            { prop: 'test', reducer: (state, action: ActionBGL<{ test: string }>) => `${state.test ? state.test : 'First'} @ [TEST]: ${action.payload.test}` },
+            { prop: 'tested', reducer: () => true },
+          ]
+        },
+      ]
+
+     */
     /** Two method for defining an Action factory: createActionFactory or createActionFactories */
 
     /**
@@ -88,6 +139,8 @@ export class TestBGL {
      * - the generics should be a map with the same keys of createActionFactories parameter,
      *    and associated with each, an array of one or two generics type, depending if the action handler is synchronous or asynchronous.
      */
+
+     /*
     const sync = new ActionConfigBGL<SyncActionPayload>(
       'syncAction', [], payload => console.log(payload)
     );
@@ -109,18 +162,23 @@ export class TestBGL {
     const save = new ActionConfigBGL<AsyncActionPayload, AsyncActionResult>(
       'save storage', ['async'], payload => this.storage.save(payload).pipe(map(result => ({ tested: result })))
     );
+  
     this.factories = beagle.createActionFactories<ActionsSchema>({ sync, async, action1, action2, action3, get, save });
+
+    const rawStore = beagle.createRawStore<{ test: string, tested: boolean }>(new RawStoreConfigBGL('test', { test: null, tested: false }, [
+      {
+        type: 'test', updates: [
+          { prop: 'test', reducer: (state, action: ActionBGL<{ test: string }>) => action.payload.test },
+          { prop: 'tested', reducer: () => true },
+        ]
+      },
+    ]));
+    const testFactory = beagle.createActionFactory<{ test: string }>(new ActionConfigBGL('test', [], payload => console.log(payload)));
+    testFactory.dispatch({ test: 'Hello DEV !!!' });
 
     this.factories.sync.dispatch({ test: 'Hello Beagle !!!' });
     const asyncRequestAction = this.factories.async.createRequest({ test: 'Hello Async Beagle !!!' });
     const asyncCancelAction = this.factories.async.createCancel(asyncRequestAction);
-
-    beagle.createAsyncEffect(async, this.factories.async);
-    beagle.createAsyncEffect(action1, this.factories.action1);
-    beagle.createAsyncEffect(action2, this.factories.action2);
-    beagle.createAsyncEffect(action3, this.factories.action3);
-    beagle.createAsyncEffect(get, this.factories.get);
-    beagle.createAsyncEffect(save, this.factories.save);
 
     const asyncActionLifecycle$ = beagle.asyncLifecycle(asyncRequestAction);
 
@@ -181,5 +239,6 @@ export class TestBGL {
     this.factories.save.dispatchRequest({ test: uuid() });
 
     setTimeout(() => this.factories.get.dispatchCancel(getAction), 2000);
+    */
   }
 }

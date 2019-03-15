@@ -3,7 +3,8 @@ import { ActionBGL } from './action-bgl';
 import { CorrelationBGL } from './correlation-bgl';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
-import { ofType } from '@ngrx/effects';
+import { ofType, Actions } from '@ngrx/effects';
+import { filter, mergeMap, takeWhile } from 'rxjs/operators';
 
 export function makeRequestTypeBGL(rawType: string): string {
   const type = rawType.includes('@') ? rawType.split('@')[0].trim() : rawType;
