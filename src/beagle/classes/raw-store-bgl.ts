@@ -3,7 +3,12 @@ import { Observable } from 'rxjs';
 import { ActionBGL } from './action-bgl';
 import { Store, select, createSelector } from '@ngrx/store';
 
-export class RawStoreBGL<State> {
+export interface RawStoreBGL<State> {
+  state$: Observable<State>;
+  selectors: { [Key in keyof State]: Observable<State[Key]> };
+}
+
+export class RawStoreBGLPrivate<State> {
     private type: string;
     private reducer: <Payload>(state: State, action: ActionBGL<Payload>) => State;
     state$: Observable<State>;
@@ -22,7 +27,7 @@ export class RawStoreBGL<State> {
         this.store.addReducer(this.type, this.reducer);
     }
 
-    createReducer(): <Payload>(state: State, action: ActionBGL<Payload>) => State {
+    private createReducer(): <Payload>(state: State, action: ActionBGL<Payload>) => State {
         return <Payload>(state: State = this.config.initialState, action: ActionBGL<Payload>) => {
             const update = this.config.updates.find(upd => upd.type === action.type);
             if (!update || update.updates.length === 0) {

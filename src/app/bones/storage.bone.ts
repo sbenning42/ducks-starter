@@ -36,32 +36,35 @@ const agregate = (entries: StorageEntries, [key, value]) => ({ ...entries, [key]
 
 @Injectable()
 export class StorageBone extends BoneBGL<StorageState, StorageSchema, StorageInjectors> {
-  bone = this.beagle.createFeatureStore<StorageState, StorageSchema>(
-    {
-      get: new ActionConfigBGL(StorageActionType.get, ['async'], () => this.injectors.storage.get()),
-      save: new ActionConfigBGL(StorageActionType.save, ['async'], payload => this.injectors.storage.save(payload)),
-      remove: new ActionConfigBGL(StorageActionType.remove, ['async'], payload => this.injectors.storage.remove(payload)),
-      clear: new ActionConfigBGL(StorageActionType.clear, ['async'], () => this.injectors.storage.get())
-    },
-    new RawStoreConfigBGL(
-      'storage', { loaded: false, entries: null },
-      (state, action) => {
-        switch (action.type) {
-          case makeResolvedTypeBGL(StorageActionType.get):
-            return { ...state, loaded: true, entries: action.payload };
-          case makeResolvedTypeBGL(StorageActionType.clear):
-            return { ...state, entries: {} };
-          case makeResolvedTypeBGL(StorageActionType.save):
-            return { ...state, entries: { ...state.entries, ...action.payload } };
-          case makeResolvedTypeBGL(StorageActionType.remove):
-            return { ...state, entries: Object.entries(state.entries).filter(predicate(action)).reduce(agregate, {}) };
-          default:
-            return state;
-        }
-      }
-    )
-  );
   constructor(beagle: BeagleService, storage: StorageService) {
-    super(beagle, { storage });
+    super(
+      beagle,
+      { storage },
+      beagle.createFeatureStore<StorageState, StorageSchema>(
+        {
+          get: new ActionConfigBGL(StorageActionType.get, ['async'], () => this.injectors.storage.get()),
+          save: new ActionConfigBGL(StorageActionType.save, ['async'], payload => this.injectors.storage.save(payload)),
+          remove: new ActionConfigBGL(StorageActionType.remove, ['async'], payload => this.injectors.storage.remove(payload)),
+          clear: new ActionConfigBGL(StorageActionType.clear, ['async'], () => this.injectors.storage.get())
+        },
+        new RawStoreConfigBGL(
+          'storage', { loaded: false, entries: null },
+          (state, action) => {
+            switch (action.type) {
+              case makeResolvedTypeBGL(StorageActionType.get):
+                return { ...state, loaded: true, entries: action.payload };
+              case makeResolvedTypeBGL(StorageActionType.clear):
+                return { ...state, entries: {} };
+              case makeResolvedTypeBGL(StorageActionType.save):
+                return { ...state, entries: { ...state.entries, ...action.payload } };
+              case makeResolvedTypeBGL(StorageActionType.remove):
+                return { ...state, entries: Object.entries(state.entries).filter(predicate(action)).reduce(agregate, {}) };
+              default:
+                return state;
+            }
+          }
+        )
+      )
+    );
   }
 }

@@ -12,16 +12,16 @@ import { AppBone, AppLoadingData, AppErrorData } from './bones/app.bone';
 export class AppComponent {
 
   title = 'app';
-  ready$: Observable<boolean> = this.app.bone.selectors.ready;
-  loading$: Observable<boolean> = this.app.bone.selectors.loading;
-  loadingData$: Observable<AppLoadingData[]> = this.app.bone.selectors.loadingData;
-  error$: Observable<AppErrorData[]> = this.app.bone.selectors.errorData;
+  ready$: Observable<boolean> = this.app.selectors.ready;
+  loading$: Observable<boolean> = this.app.selectors.loading;
+  loadingData$: Observable<AppLoadingData[]> = this.app.selectors.loadingData;
+  error$: Observable<AppErrorData[]> = this.app.selectors.errorData;
 
   constructor(
     public storage: StorageBone,
     public app: AppBone
   ) {
-    app.bone.actions.initializeRequest.dispatch(undefined);
+    app.actions.initializeRequest.dispatch(undefined);
   }
 
 }

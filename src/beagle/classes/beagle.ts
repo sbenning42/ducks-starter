@@ -14,13 +14,29 @@ import { ActionFactoryBGL } from './action-factory-bgl';
 import { of, Observable } from 'rxjs';
 import { ActionBGL } from './action-bgl';
 import { RawStoreConfigBGL } from './raw-store-config-bgl';
-import { mergeMap, take, map, catchError, takeUntil, defaultIfEmpty, filter, takeWhile } from 'rxjs/operators';
-import { RawStoreBGL } from './raw-store-bgl';
+import { mergeMap, take, map, catchError, takeUntil, defaultIfEmpty, filter, takeWhile, pluck } from 'rxjs/operators';
+import { RawStoreBGL, RawStoreBGLPrivate } from './raw-store-bgl';
+import { CorrelationBGL } from './correlation-bgl';
 
 export interface SchemaBGL {
   [key: string]: [any] | [any, any];
 }
 
+export function hasCorrelationIds(...ids: string[]) {
+  return (actions$: Observable<ActionBGL<any>>) => actions$.pipe(
+    filter(({ correlations }) => correlations && correlations.some(correlation => ids.includes(correlation.id))),
+  );
+}
+export function hasCorrelationTypes(...types: string[]) {
+  return (actions$: Observable<ActionBGL<any>>) => actions$.pipe(
+    filter(({ correlations }) => correlations && correlations.some(correlation => types.includes(correlation.type))),
+  );
+}
+export function hasCorrelations(...correlations: CorrelationBGL[]) {
+  return (actions$: Observable<ActionBGL<any>>) => actions$.pipe(
+    hasCorrelationIds(...correlations.map(correlation => correlation.id)),
+  );
+}
 export class Beagle {
   constructor(
     public store: Store<any>,
@@ -104,7 +120,7 @@ export class Beagle {
   }
 
   createRawStore<State>(config: RawStoreConfigBGL<State>) {
-    return new RawStoreBGL<State>(config, this.store);
+    return new RawStoreBGLPrivate<State>(config, this.store);
   }
 
   createFeatureStore<State, Schema extends SchemaBGL>(

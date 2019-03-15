@@ -64,8 +64,8 @@ export class TestBGL {
       test: string;
     }
     interface TestSchema extends SchemaBGL {
-      test: [TestPayload, void],
-      test2: [TestPayload, void],
+      test: [TestPayload];
+      test2: [TestPayload];
     }
 
     const feature = beagle.createFeatureStore<TestState, TestSchema>(
@@ -136,7 +136,7 @@ export class TestBGL {
      * createActionFactories take an ActionConfigBGL map as parameter,
      * it return a map of createActionFactory call.
      * In order to get a strong typed output, createActionFactories should take one generics type:
-     * - the generics should be a map with the same keys of createActionFactories parameter,
+     * - the generics should be a map with the same keys as createActionFactories parameter,
      *    and associated with each, an array of one or two generics type, depending if the action handler is synchronous or asynchronous.
      */
 
@@ -162,7 +162,7 @@ export class TestBGL {
     const save = new ActionConfigBGL<AsyncActionPayload, AsyncActionResult>(
       'save storage', ['async'], payload => this.storage.save(payload).pipe(map(result => ({ tested: result })))
     );
-  
+
     this.factories = beagle.createActionFactories<ActionsSchema>({ sync, async, action1, action2, action3, get, save });
 
     const rawStore = beagle.createRawStore<{ test: string, tested: boolean }>(new RawStoreConfigBGL('test', { test: null, tested: false }, [
