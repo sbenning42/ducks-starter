@@ -6,7 +6,7 @@ import { BeagleService } from '../../beagle/beagle.service';
 import { RawStoreConfigBGL } from '../../beagle/classes/raw-store-config-bgl';
 import { ActionConfigBGL } from '../../beagle/classes/action-config-bgl';
 import { Effect, ofType } from '@ngrx/effects';
-import { mergeMap, switchMap, map, filter, take } from 'rxjs/operators';
+import { mergeMap, switchMap, map, filter, take, distinctUntilChanged, skip, tap, withLatestFrom } from 'rxjs/operators';
 import { ActionBGL } from '../../beagle/classes/action-bgl';
 import { concat, of, from } from 'rxjs';
 import { ofResolvedType } from '../../beagle/classes/async-actions-factory-bgl';
@@ -68,9 +68,7 @@ export class AppBone extends BoneBGL<AppState, AppSchema, AppInjectors> {
       { storage },
       beagle.createFeatureStore<AppState, AppSchema>(
         {
-          initializeRequest: new ActionConfigBGL(AppActionType.initializeRequest, [
-            'ini'
-          ]),
+          initializeRequest: new ActionConfigBGL(AppActionType.initializeRequest, ['ini']),
           initializeResponse: new ActionConfigBGL(AppActionType.initializeResponse),
           setReady: new ActionConfigBGL(AppActionType.setReady),
           startLoading: new ActionConfigBGL(AppActionType.startLoading),
@@ -116,12 +114,28 @@ export class AppBone extends BoneBGL<AppState, AppSchema, AppInjectors> {
         })
       )
     );
+    console.log(this);
   }
 
+  @Effect({ dispatch: false })
+  private load$ = this.selectors.loading.pipe(
+    skip(1),
+    distinctUntilChanged(),
+    withLatestFrom(this.selectors.loadingData),
+    tap(([loading, data]) => {
+      if (loading) {
+        console.log('Loading Start: ', data);
+      } else {
+        console.log('Loading Stop.');
+      }
+    })
+  );
+
   @Effect({ dispatch: true })
-  loadAsync$ = this.beagle.actions$.pipe(
+  private loadAsync$ = this.beagle.actions$.pipe(
     filter((action: ActionBGL<any>) => action.type.includes('@ Request')),
-    hasCorrelationTypes('loadasync', 'async'),
+    hasCorrelationTypes('loadasync'),
+    hasCorrelationTypes('async'),
     mergeMap((action: ActionBGL<any>) => {
       const asyncId = action.correlations.find(c => c.type === 'async').id;
       const loading = new CorrelationBGL('loading');
@@ -137,7 +151,7 @@ export class AppBone extends BoneBGL<AppState, AppSchema, AppInjectors> {
   );
 
   @Effect({ dispatch: true })
-  ini$ = this.beagle.actions$.pipe(
+  private ini$ = this.beagle.actions$.pipe(
     ofType(AppActionType.initializeRequest),
     mergeMap((initilaize: ActionBGL<void>) => {
       const ini = initilaize.correlations.find(c => c.type === 'ini');

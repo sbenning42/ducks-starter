@@ -1,4 +1,4 @@
-import { Store } from '@ngrx/store';
+import { Store, select, createSelector } from '@ngrx/store';
 import { Actions, ofType } from '@ngrx/effects';
 import { ActionConfigBGL } from './action-config-bgl';
 import {
@@ -57,6 +57,16 @@ export class Beagle {
         take(1)
       ))
     ).subscribe(action => this.store.dispatch(action));
+  }
+
+  select(type: string, propPath: string) {
+    const getProp = (obj: any) => {
+      const paths = propPath.split('.');
+      let propObj = obj;
+      paths.forEach(path => propObj = propObj[path]);
+      return propObj;
+    };
+    return this.store.pipe(select(createSelector(states => states[type], state => getProp(state))));
   }
 
   createActionFactory<Payload, Result extends (Object|void) = void>(

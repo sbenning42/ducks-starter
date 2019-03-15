@@ -8,30 +8,36 @@ import { ActionConfigBGL } from './classes/action-config-bgl';
 
 @Injectable()
 export class BeagleService {
-    private beagle = new Beagle(this.store, this.actions$);
-    get actions$(): Actions {
-        return this._actions$;
-    }
-    constructor(
-        private store: Store<any>,
-        private _actions$: Actions,
-    ) {}
+  private beagle = new Beagle(this.store, this.actions$);
+  get actions$(): Actions {
+    return this._actions$;
+  }
+  constructor(private store: Store<any>, private _actions$: Actions) {}
 
-    dispatch<A extends { type: string }>(action: A) {
-        this.beagle.store.dispatch(action);
-    }
+  select(type: string, propPath: string = '') {
+    return this.beagle.select(type, propPath);
+  }
 
-    asyncLifecycle<Payload, Result>(request: ActionBGL<Payload>) {
-        return this.beagle.asyncLifecycle<Payload, Result>(request);
-    }
+  dispatch<A extends { type: string }>(action: A) {
+    this.beagle.store.dispatch(action);
+  }
 
-    createFeatureStore<State, Schema extends SchemaBGL>(
-      actionsConfigs: {
-        [Key in keyof Schema]: ActionConfigBGL<Schema[Key][0], Schema[Key][1] extends undefined ? void : Schema[Key][1]>
-      },
-      storeConfig: RawStoreConfigBGL<State>,
-    ) {
-        return this.beagle.createFeatureStore<State, Schema>(actionsConfigs, storeConfig);
-    }
+  asyncLifecycle<Payload, Result>(request: ActionBGL<Payload>) {
+    return this.beagle.asyncLifecycle<Payload, Result>(request);
+  }
 
+  createFeatureStore<State, Schema extends SchemaBGL>(
+    actionsConfigs: {
+      [Key in keyof Schema]: ActionConfigBGL<
+        Schema[Key][0],
+        Schema[Key][1] extends undefined ? void : Schema[Key][1]
+      >
+    },
+    storeConfig: RawStoreConfigBGL<State>
+  ) {
+    return this.beagle.createFeatureStore<State, Schema>(
+      actionsConfigs,
+      storeConfig
+    );
+  }
 }

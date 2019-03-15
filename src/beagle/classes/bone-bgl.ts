@@ -51,7 +51,11 @@ export abstract class BoneBGL<
           : AsyncActionFactoryBGL<Schema[Key][0], Schema[Key][1]>
       };
     },
-  ) {}
+  ) {
+    this.state$ = this.bone.state$;
+    this.selectors = this.bone.selectors;
+    this.actions = this.bone.actions;
+  }
   private asyncTypes(action: ActionBGL<any>, ...types: string[]) {
     return this.asyncLifecycle(action).pipe(filter(thisAction =>  types.includes(thisAction.type)), take(1));
   }
