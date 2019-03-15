@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { Observable } from 'rxjs';
 import { StorageBone } from './bones/storage.bone';
-import { AppBone } from './bones/app.bone';
+import { AppBone, AppLoadingData, AppErrorData } from './bones/app.bone';
 
 
 @Component({
@@ -12,10 +12,10 @@ import { AppBone } from './bones/app.bone';
 export class AppComponent {
 
   title = 'app';
-  ready$: Observable<boolean>;
-  loading$: Observable<boolean>;
-  loadingData$: Observable<any[]>;
-  error$: Observable<Error[]>;
+  ready$: Observable<boolean> = this.app.bone.selectors.ready;
+  loading$: Observable<boolean> = this.app.bone.selectors.loading;
+  loadingData$: Observable<AppLoadingData[]> = this.app.bone.selectors.loadingData;
+  error$: Observable<AppErrorData[]> = this.app.bone.selectors.errorData;
 
   constructor(
     public storage: StorageBone,
@@ -23,6 +23,6 @@ export class AppComponent {
   ) {
     app.bone.actions.initializeRequest.dispatch(undefined);
   }
- 
+
 }
 

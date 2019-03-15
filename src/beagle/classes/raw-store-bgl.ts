@@ -1,7 +1,7 @@
-import { RawStoreConfigBGL } from "./raw-store-config-bgl";
-import { Observable } from "rxjs";
-import { ActionBGL } from "./action-bgl";
-import { Store, select, createSelector } from "@ngrx/store";
+import { RawStoreConfigBGL } from './raw-store-config-bgl';
+import { Observable } from 'rxjs';
+import { ActionBGL } from './action-bgl';
+import { Store, select, createSelector } from '@ngrx/store';
 
 export class RawStoreBGL<State> {
     private type: string;
