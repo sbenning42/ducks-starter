@@ -82,7 +82,7 @@ export class Beagle {
       makeErroredTypeBGL(request.type),
       makeCanceledTypeBGL(request.type),
     ].includes(type);
-    const isAsyncCorrelation = (action: ActionBGL<any>) => action.correlations.find(correlation => correlation.type === 'async');
+    const isAsyncCorrelation = (action: ActionBGL<any>) => action.correlations.some(correlation => correlation.type === 'async');
     const grabAsyncCorrelation = (action: ActionBGL<any>) => action.correlations.find(correlation => correlation.type === 'async');
     const compareAsyncCorrelation = (action1: ActionBGL<any>, action2: ActionBGL<any>) =>
       isAsyncCorrelation(action1)

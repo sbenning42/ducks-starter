@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { Observable } from 'rxjs';
 import { StorageBone } from './bones/storage.bone';
+import { AppBone } from './bones/app.bone';
 
 
 @Component({
@@ -18,7 +19,10 @@ export class AppComponent {
 
   constructor(
     public storage: StorageBone,
-  ) {}
+    public app: AppBone
+  ) {
+    app.bone.actions.initializeRequest.dispatch(undefined);
+  }
  
 }
 

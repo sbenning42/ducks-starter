@@ -17,6 +17,7 @@ import { PageAboutComponent } from './pages/page-about/page-about.component';
 import { StorageService } from './services/storage/storage.service';
 import { BeagleModule } from '../beagle/beagle.module';
 import { StorageBone } from './bones/storage.bone';
+import { AppBone } from './bones/app.bone';
 
 @NgModule({
   declarations: [
@@ -33,14 +34,17 @@ import { StorageBone } from './bones/storage.bone';
     ReactiveFormsModule,
     RouterModule.forRoot(appRoutes),
     StoreModule.forRoot({}),
-    EffectsModule.forRoot([]),
+    EffectsModule.forRoot([
+      AppBone
+    ]),
     StoreDevtoolsModule.instrument({ maxAge: 25 }),
     StoreRouterConnectingModule.forRoot(),
     BeagleModule,
   ],
   providers: [
     StorageService,
-    StorageBone
+    StorageBone,
+    AppBone
   ],
   bootstrap: [AppComponent]
 })

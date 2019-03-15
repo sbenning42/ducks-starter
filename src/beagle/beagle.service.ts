@@ -9,9 +9,12 @@ import { ActionConfigBGL } from "./classes/action-config-bgl";
 @Injectable()
 export class BeagleService {
     private beagle = new Beagle(this.store, this.actions$);
+    get actions$(): Actions {
+        return this._actions$;
+    }
     constructor(
         private store: Store<any>,
-        private actions$: Actions,
+        private _actions$: Actions,
     ) {}
 
     dispatch<A extends { type: string }>(action: A) {

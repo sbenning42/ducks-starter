@@ -35,7 +35,7 @@ const agregate = (entries, [key, value]) => ({ ...entries, [key]: value });
 export class StorageBone extends BoneBGL<StorageState, StorageSchema, StorageInjectors> {
     bone = this.beagle.createFeatureStore<StorageState, StorageSchema>(
         {
-            get: new ActionConfigBGL(StorageActionType.get, ['async'], () => this.injectors.storage.get()),
+            get: new ActionConfigBGL(StorageActionType.get, ['async', 'loadasync'], () => this.injectors.storage.get()),
             save: new ActionConfigBGL(StorageActionType.save, ['async'], payload => this.injectors.storage.save(payload)),
             remove: new ActionConfigBGL(StorageActionType.remove, ['async'], payload => this.injectors.storage.remove(payload)),
             clear: new ActionConfigBGL(StorageActionType.clear, ['async'], () => this.injectors.storage.get()),
