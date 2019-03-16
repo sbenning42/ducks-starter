@@ -11,7 +11,7 @@ export class StorageService {
   constructor(public actions$: Actions) { }
 
   get(): Observable<any> {
-    return timer(2500).pipe(switchMap(() => defer(() => {
+    return timer(0).pipe(switchMap(() => defer(() => {
       const entries = {};
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);

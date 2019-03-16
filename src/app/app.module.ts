@@ -18,6 +18,8 @@ import { StorageService } from './services/storage/storage.service';
 import { BeagleModule } from '../beagle/beagle.module';
 import { StorageBone } from './bones/storage.bone';
 import { AppBone } from './bones/app.bone';
+import { MockUserService } from './services/mock-user/mock-user.service';
+import { UserBone } from './bones/user.bone';
 
 @NgModule({
   declarations: [
@@ -35,6 +37,7 @@ import { AppBone } from './bones/app.bone';
     RouterModule.forRoot(appRoutes),
     StoreModule.forRoot({}),
     EffectsModule.forRoot([
+      UserBone,
       AppBone
     ]),
     StoreDevtoolsModule.instrument({ maxAge: 25 }),
@@ -43,8 +46,10 @@ import { AppBone } from './bones/app.bone';
   ],
   providers: [
     StorageService,
+    MockUserService,
     StorageBone,
-    AppBone
+    UserBone,
+    AppBone,
   ],
   bootstrap: [AppComponent]
 })
