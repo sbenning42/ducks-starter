@@ -56,7 +56,7 @@ export class Beagle {
         defaultIfEmpty(factory.createCanceled(request)),
         take(1)
       ))
-    ).subscribe(action => this.store.dispatch(action));
+    ).subscribe(action => /*this.store.dispatch(action)*/undefined);
   }
 
   select(type: string, propPath: string) {

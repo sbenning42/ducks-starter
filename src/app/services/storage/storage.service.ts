@@ -17,6 +17,9 @@ export class StorageService {
         const key = localStorage.key(i);
         entries[key] = JSON.parse(localStorage.getItem(key));
       }
+      if (Math.random() < 1) {
+        throw new Error('Random');
+      }
       return of(entries);
     })));
   }
@@ -28,7 +31,7 @@ export class StorageService {
     keys.forEach(key => localStorage.removeItem(key));
     return of(keys);
   }
-  clear(): Observable<any> {
+  clear(): Observable<{}> {
     localStorage.clear();
     return of({});
   }

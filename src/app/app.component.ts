@@ -9,6 +9,9 @@ import { BeagleService } from 'src/beagle/beagle.service';
 import { makeRequestTypeBGL, BeagleSym, AsyncActionFactoryBGL } from 'src/beagle/classes/async-actions-factory-bgl';
 import { ActionBGL } from 'src/beagle/classes/action-bgl';
 import { BoneBGL } from 'src/beagle/classes/bone-bgl';
+import { StorageDuck } from './ducks/storage.duck';
+import { UserDuck } from './ducks/user.duck';
+import { AppDuck } from './ducks/app.duck';
 
 
 @Component({
@@ -18,13 +21,14 @@ import { BoneBGL } from 'src/beagle/classes/bone-bgl';
 })
 export class AppComponent {
 
-  ready$: Observable<boolean> = this.app.selectors.ready;
-  loading$: Observable<boolean> = this.app.selectors.loading;
-  loadingData$: Observable<AppLoadingData[]> = this.app.selectors.loadingData;
-  error$: Observable<boolean> = this.app.selectors.error;
-  errorData$: Observable<AppErrorData[]> = this.app.selectors.errorData;
+  ready$: Observable<boolean> = this.app.storeManager.selectors.ready;
+  loading$: Observable<boolean> = this.app.storeManager.selectors.loading;
+  loadingData$: Observable<AppLoadingData[]> = this.app.storeManager.selectors.loadingData;
+  error$: Observable<boolean> = this.app.storeManager.selectors.error;
+  errorData$: Observable<AppErrorData[]> = this.app.storeManager.selectors.errorData;
 
   loadingActions$ = defer(() => {
+    /*
     let loadingActions = [];
     const findAsync = (action: ActionBGL<any>) => action.correlations && action.correlations
       .find(correlation => correlation.type === 'async');
@@ -55,30 +59,34 @@ export class AppComponent {
         }),
       ),
     );
+    */
   });
 
   constructor(
-    public beagle: BeagleService,
-    public storage: StorageBone,
-    public app: AppBone,
-    public user: UserBone,
+    public storageD: StorageDuck,
+    public userD: UserDuck,
+    public app: AppDuck,
   ) {
-    app.actions.initializeRequest.dispatch(undefined);
+    this.app.actionsManager.initializeRequest.dispatch(undefined);
   }
 
   eraseErrors(datas: AppErrorData[]) {
+    /*
     const correlation = new CorrelationBGL('AppComponent@eraseErrors');
     this.app.dispatch(...datas.map(() => this.app.actions.stopError.create(undefined, [correlation])));
+    */
   }
 
   cancelAll(
     actions: { request: ActionBGL<any>, async: CorrelationBGL, factory: AsyncActionFactoryBGL<any, any> }[]
   ) {
+    /*
     console.log('AppComponent@cancelAll: ', actions);
     const correlation = new CorrelationBGL('AppComponent@cancelAll');
     this.beagle.dispatch(
       ...actions.map(action => action.factory.createCancel(action.request, [correlation]))
     );
+    */
   }
 
 }

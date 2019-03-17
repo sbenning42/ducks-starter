@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { AppBone } from 'src/app/bones/app.bone';
 import { UserBone } from 'src/app/bones/user.bone';
 import { Observable } from 'rxjs';
+import { AppDuck } from 'src/app/ducks/app.duck';
+import { UserDuck } from 'src/app/ducks/user.duck';
 
 @Component({
   selector: 'app-header',
@@ -10,15 +12,15 @@ import { Observable } from 'rxjs';
 })
 export class HeaderComponent implements OnInit {
 
-  authentified$: Observable<boolean> = this.user.selectors.authentified;
+  authentified$: Observable<boolean> = this.user.storeManager.selectors.authentified;
 
-  constructor(public app: AppBone, public user: UserBone) { }
+  constructor(public app: AppDuck, public user: UserDuck) { }
 
   ngOnInit() {
   }
 
   goto(target: string) {
-    this.app.actions.goto.dispatch({ target });
+    this.app.actionsManager.goto.dispatch({ target });
   }
 
 }

@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { StorageBone } from 'src/app/bones/storage.bone';
 import { AppBone } from 'src/app/bones/app.bone';
+import { StorageDuck } from 'src/app/ducks/storage.duck';
+import { AppDuck } from 'src/app/ducks/app.duck';
 
 @Component({
   selector: 'app-page-tutorial',
@@ -9,14 +11,14 @@ import { AppBone } from 'src/app/bones/app.bone';
 })
 export class PageTutorialComponent implements OnInit {
 
-  constructor(public storage: StorageBone, public app: AppBone) { }
+  constructor(public storage: StorageDuck, public app: AppDuck) { }
 
   ngOnInit() {
   }
 
   finishTutorial() {
-    this.storage.actions.save.dispatchRequest({ firstVisit: false });
-    this.app.actions.goto.dispatch({ target: '/signup' });
+    this.storage.actionsManager.save.dispatchAsyncRequest({ firstVisit: false });
+    this.app.actionsManager.goto.dispatch({ target: '/signup' });
   }
 
 }

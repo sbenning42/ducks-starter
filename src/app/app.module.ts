@@ -15,15 +15,15 @@ import { PageNotFoundComponent } from './pages/page-not-found/page-not-found.com
 import { PageContactComponent } from './pages/page-contact/page-contact.component';
 import { PageAboutComponent } from './pages/page-about/page-about.component';
 import { StorageService } from './services/storage/storage.service';
-import { BeagleModule } from '../beagle/beagle.module';
-import { StorageBone } from './bones/storage.bone';
-import { AppBone } from './bones/app.bone';
 import { MockUserService } from './services/mock-user/mock-user.service';
-import { UserBone } from './bones/user.bone';
 import { PageTutorialComponent } from './pages/page-tutorial/page-tutorial.component';
 import { PageSigninComponent } from './pages/page-signin/page-signin.component';
 import { PageSignupComponent } from './pages/page-signup/page-signup.component';
 import { HeaderComponent } from './components/header/header.component';
+import { DucksModule } from 'src/ducks/ducks.module';
+import { StorageDuck } from './ducks/storage.duck';
+import { UserDuck } from './ducks/user.duck';
+import { AppDuck } from './ducks/app.duck';
 
 @NgModule({
   declarations: [
@@ -45,19 +45,19 @@ import { HeaderComponent } from './components/header/header.component';
     RouterModule.forRoot(appRoutes),
     StoreModule.forRoot({}),
     EffectsModule.forRoot([
-      UserBone,
-      AppBone
+      UserDuck,
+      AppDuck,
     ]),
     StoreDevtoolsModule.instrument({ maxAge: 25 }),
     StoreRouterConnectingModule.forRoot(),
-    BeagleModule,
+    DucksModule,
   ],
   providers: [
     StorageService,
     MockUserService,
-    StorageBone,
-    UserBone,
-    AppBone,
+    StorageDuck,
+    UserDuck,
+    AppDuck,
   ],
   bootstrap: [AppComponent]
 })
