@@ -1,0 +1,23 @@
+<ng-container>
+  <section>
+    <form [formGroup]="userForm" novalidate>
+      <section class="input-field">
+        <input type="email" placeholder="Email" [formControl]="emailCtrl" />
+        <section class="input-error" *ngIf="emailCtrl.touched && emailCtrl.hasError('required')">
+          <p>
+            An Email is required.
+          </p>
+        </section>
+      </section>
+      <section class="input-field">
+        <input type="password" placeholder="Password" [formControl]="passwordCtrl" />
+        <section class="input-error" *ngIf="passwordCtrl.touched && passwordCtrl.hasError('required')">
+          <p>
+            A Password is required.
+          </p>
+        </section>
+      </section>
+      <button (click)="signup()">Sign Up</button>
+    </form>
+  </section>
+</ng-container>

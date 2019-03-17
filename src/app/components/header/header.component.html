@@ -1,0 +1,5 @@
+<section>
+  <a *ngIf="authentified$ | async" (click)="goto('/home')" style="text-decoration: none">HOME</a>
+  <a (click)="goto('/contact')" style="text-decoration: none">ABOUT</a>
+  <a (click)="goto('/about')" style="text-decoration: none">CONTACT</a>
+</section>

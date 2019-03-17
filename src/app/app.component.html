@@ -1,18 +1,24 @@
+<ng-container>
+  <app-header></app-header>
+</ng-container>
 <ng-container *ngIf="ready$ | async">
   <section class="router">
     <router-outlet></router-outlet>
   </section>
 </ng-container>
 
-<ng-container *ngIf="(error$ | async) as error">
-  <section class="error">
-    <h2>{{ error.name }}</h2>
-    <p>{{ error.message }}</p>
-  </section>
+<ng-container *ngIf="error$ | async">
+  <ng-container *ngIf="errorData$ | async as errorData">
+    <section class="error">
+      <p (click)="eraseErrors(errorData)">{{ errorData | json }}</p>
+    </section>
+  </ng-container>
 </ng-container>
 
 <ng-container *ngIf="loading$ | async">
-  <section class="loading">
-    <p>{{ (loadingData$ | async) | json }}</p>
-  </section>
+  <ng-container *ngIf="loadingActions$ | async as loadingActions">
+    <section class="loading">
+      <p (click)="cancelAll(loadingActions)">{{ (loadingData$ | async) | json }}</p>
+    </section>
+  </ng-container>
 </ng-container>

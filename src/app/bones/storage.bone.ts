@@ -11,6 +11,7 @@ import { makeResolvedTypeBGL } from '../../beagle/classes/async-actions-factory-
 export interface StorageEntries {
   [key: string]: any;
 }
+export const storageType = 'storage';
 export interface StorageState {
   loaded: boolean;
   entries: StorageEntries;
@@ -22,10 +23,10 @@ export interface StorageSchema extends SchemaBGL {
   clear: [void, StorageEntries];
 }
 export enum StorageActionType {
-  get = '[Storage Action Type] Get',
-  save = '[Storage Action Type] Save',
-  remove = '[Storage Action Type] Remove',
-  clear = '[Storage Action Type] Clear'
+  get = '@storage/get',
+  save = '@storage/save',
+  remove = '@storage/remove',
+  clear = '@storage/clear'
 }
 export interface StorageInjectors {
   storage: StorageService;
@@ -48,7 +49,7 @@ export class StorageBone extends BoneBGL<StorageState, StorageSchema, StorageInj
           clear: new ActionConfigBGL(StorageActionType.clear, ['async'], () => this.injectors.storage.get())
         },
         new RawStoreConfigBGL(
-          'storage', { loaded: false, entries: null },
+          storageType, { loaded: false, entries: null },
           (state, action) => {
             switch (action.type) {
               case makeResolvedTypeBGL(StorageActionType.get):

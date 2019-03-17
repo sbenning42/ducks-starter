@@ -5,10 +5,12 @@ import { Beagle, SchemaBGL } from './classes/beagle';
 import { ActionBGL } from './classes/action-bgl';
 import { RawStoreConfigBGL } from './classes/raw-store-config-bgl';
 import { ActionConfigBGL } from './classes/action-config-bgl';
+import { BoneBGL } from './classes/bone-bgl';
 
 @Injectable()
 export class BeagleService {
   private beagle = new Beagle(this.store, this.actions$);
+  private bones = {};
   get actions$(): Actions {
     return this._actions$;
   }
@@ -18,12 +20,19 @@ export class BeagleService {
     return this.beagle.select(type, propPath);
   }
 
-  dispatch<A extends { type: string }>(action: A) {
-    this.beagle.store.dispatch(action);
+  dispatch(...actions: ActionBGL<any>[]) {
+    actions.forEach(action => this.beagle.store.dispatch(action));
   }
 
   asyncLifecycle<Payload, Result>(request: ActionBGL<Payload>) {
     return this.beagle.asyncLifecycle<Payload, Result>(request);
+  }
+
+  registerFeatureBone(featureBone: BoneBGL<any, any>) {
+    const entry = Object.values(this.bones).find(bone => bone['bone'] === featureBone['bone']);
+    if (entry) {
+      entry['bone'] = featureBone;
+    }
   }
 
   createFeatureStore<State, Schema extends SchemaBGL>(
@@ -35,9 +44,52 @@ export class BeagleService {
     },
     storeConfig: RawStoreConfigBGL<State>
   ) {
-    return this.beagle.createFeatureStore<State, Schema>(
+    const bone = this.beagle.createFeatureStore<State, Schema>(
       actionsConfigs,
       storeConfig
     );
+    this.bones[storeConfig.type] = { bone, storeConfig, actionsConfigs };
+    return bone;
+  }
+
+  getBone<Bone>(type: string) {
+    return this.bones[type] ? this.bones[type].bone as Bone : undefined;
+  }
+
+  getBoneStoreConfig(type: string) {
+    return this.bones[type].storeConfig;
+  }
+
+  getBoneActionConfig(type: string) {
+    return this.bones[type].actionsConfigs;
+  }
+
+  getBoneType(action: ActionBGL<any>) {
+    const notEmpty = (str: string) => str && str.length > 0;
+    const rawType = action.type;
+    const parts = rawType.split('@').filter(notEmpty);
+    if (parts.length < 1) {
+      return undefined;
+    }
+    const typeParts = parts[0].split('/');
+    if (typeParts.length < 1) {
+      return undefined;
+    }
+    return typeParts[0];
+  }
+
+  getBoneOf<Bone>(action: ActionBGL<any>) {
+    const type = this.getBoneType(action);
+    return this.getBone<Bone>(type);
+  }
+
+  getBoneStoreConfigOf(action: ActionBGL<any>) {
+    const type = this.getBoneType(action);
+    return this.getBoneStoreConfig(type);
+  }
+
+  getBoneActionConfigOf(action: ActionBGL<any>) {
+    const type = this.getBoneType(action);
+    return this.getBoneActionConfig(type);
   }
 }

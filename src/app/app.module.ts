@@ -20,6 +20,10 @@ import { StorageBone } from './bones/storage.bone';
 import { AppBone } from './bones/app.bone';
 import { MockUserService } from './services/mock-user/mock-user.service';
 import { UserBone } from './bones/user.bone';
+import { PageTutorialComponent } from './pages/page-tutorial/page-tutorial.component';
+import { PageSigninComponent } from './pages/page-signin/page-signin.component';
+import { PageSignupComponent } from './pages/page-signup/page-signup.component';
+import { HeaderComponent } from './components/header/header.component';
 
 @NgModule({
   declarations: [
@@ -27,7 +31,11 @@ import { UserBone } from './bones/user.bone';
     PageHomeComponent,
     PageNotFoundComponent,
     PageContactComponent,
-    PageAboutComponent
+    PageAboutComponent,
+    PageTutorialComponent,
+    PageSigninComponent,
+    PageSignupComponent,
+    HeaderComponent
   ],
   imports: [
     BrowserModule,

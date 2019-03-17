@@ -1,17 +1,20 @@
 import { MockUser, MockUserService } from '../services/mock-user/mock-user.service';
 import { StorageBone } from './storage.bone';
-import { SchemaBGL } from 'src/beagle/classes/beagle';
+import { SchemaBGL, hasCorrelationTypes } from 'src/beagle/classes/beagle';
 import { Injectable } from '@angular/core';
 import { BoneBGL } from 'src/beagle/classes/bone-bgl';
 import { BeagleService } from 'src/beagle/beagle.service';
 import { RawStoreConfigBGL } from 'src/beagle/classes/raw-store-config-bgl';
 import { ActionConfigBGL } from 'src/beagle/classes/action-config-bgl';
-import { makeRequestTypeBGL } from 'src/beagle/classes/async-actions-factory-bgl';
+import { makeResolvedTypeBGL, makeRequestTypeBGL } from 'src/beagle/classes/async-actions-factory-bgl';
 import { Effect, ofType } from '@ngrx/effects';
-import { map } from 'rxjs/operators';
+import { map, mergeMap, switchMap } from 'rxjs/operators';
 import { ActionBGL } from 'src/beagle/classes/action-bgl';
+import { concat, from } from 'rxjs';
 
 export type User = MockUser;
+
+export const userType = 'user';
 
 export interface UserState {
   authentified: boolean;
@@ -36,11 +39,11 @@ export interface UserSchema extends SchemaBGL {
 }
 
 export enum UserActionType  {
-  setCredentials = '[User Action Type] Set Credentials',
-  removeCredentials = '[User Action Remove Credentials] ',
-  signup = '[User Action Type] Sign Up',
-  signin = '[User Action Type] Sign In',
-  signout = '[User Action Type] Sign Out',
+  setCredentials = '@user/set-credentials',
+  removeCredentials = '@user/remove-credentials',
+  signup = '@user/sign-up',
+  signin = '@user/sign-in',
+  signout = '@user/sign-out',
 }
 
 export interface UserInjector {
@@ -69,17 +72,17 @@ export class UserBone extends BoneBGL<UserState, UserSchema, UserInjector> {
           UserActionType.signout, ['async'], payload => user.signout(payload)
         ),
       },
-      new RawStoreConfigBGL<UserState>('user', initialUserState, (state, action) => {
+      new RawStoreConfigBGL<UserState>(userType, initialUserState, (state, action) => {
         switch (action.type) {
           case UserActionType.setCredentials:
             return { ...state, credentials: action.payload };
           case UserActionType.removeCredentials:
             return { ...state, credentials: null };
-          case makeRequestTypeBGL(UserActionType.signup):
+          case makeResolvedTypeBGL(UserActionType.signup):
             return { ...state, user: action.payload };
-          case makeRequestTypeBGL(UserActionType.signin):
+          case makeResolvedTypeBGL(UserActionType.signin):
             return { ...state, authentified: true, user: action.payload.user, token: action.payload.token };
-          case makeRequestTypeBGL(UserActionType.signout):
+          case makeResolvedTypeBGL(UserActionType.signout):
             return { ...state, authentified: false, user: null, token: null };
           default:
             return state;
@@ -97,5 +100,21 @@ export class UserBone extends BoneBGL<UserState, UserSchema, UserInjector> {
   private removeCredentials$ = this.beagle.actions$.pipe(
     ofType(UserActionType.removeCredentials),
     map((action: ActionBGL<undefined>) => this.injectors.storage.actions.remove.createRequest(['credentials'])),
+  );
+  @Effect({ dispatch: true })
+  private signinFromPageSigninComponent$ = this.beagle.actions$.pipe(
+    ofType(makeRequestTypeBGL(UserActionType.signin)),
+    hasCorrelationTypes('PageSigninComponent@signin'),
+    mergeMap((signinRequest: ActionBGL<User>) => {
+      const correlation = signinRequest.correlations.find(correlation => correlation.type === 'PageSigninComponent@signin');
+      return this.asyncResolved(signinRequest).pipe(
+        switchMap(() => {
+          const setCredentials = this.actions.setCredentials.create(signinRequest.payload, [correlation]);
+          const goto = this.beagle.getBone<BoneBGL<{}, { goto: [{ target: string }] }>>('app')
+            .actions.goto.create({ target: '/home' }, [correlation]);
+          return from([setCredentials, goto]);
+        }),
+      );
+    }),
   );
 }

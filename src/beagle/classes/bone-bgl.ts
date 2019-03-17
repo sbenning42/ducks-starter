@@ -55,12 +55,22 @@ export abstract class BoneBGL<
     this.state$ = this.bone.state$;
     this.selectors = this.bone.selectors;
     this.actions = this.bone.actions;
+    this.beagle.registerFeatureBone(this);
   }
   private asyncTypes(action: ActionBGL<any>, ...types: string[]) {
     return this.asyncLifecycle(action).pipe(filter(thisAction =>  types.includes(thisAction.type)), take(1));
   }
-  dispatch(action: ActionBGL<any>) {
-    this.beagle.dispatch(action);
+  getActionEntry(action: ActionBGL<any>) {
+    return Object.entries(this.actions).find(([, entry]) => action.type.includes(entry.config.type)) || [];
+  }
+  getActionName(action: ActionBGL<any>) {
+    return this.getActionEntry(action)[0];
+  }
+  getActionFactory(action: ActionBGL<any>) {
+    return this.getActionEntry(action)[1];
+  }
+  dispatch(...actions: ActionBGL<any>[]) {
+    actions.forEach(action => this.beagle.dispatch(action));
   }
   asyncLifecycle(action: ActionBGL<any>) {
     return this.beagle.asyncLifecycle(action);

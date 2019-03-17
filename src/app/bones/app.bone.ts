@@ -6,10 +6,10 @@ import { BeagleService } from '../../beagle/beagle.service';
 import { RawStoreConfigBGL } from '../../beagle/classes/raw-store-config-bgl';
 import { ActionConfigBGL } from '../../beagle/classes/action-config-bgl';
 import { Effect, ofType } from '@ngrx/effects';
-import { mergeMap, switchMap, map, filter, take, distinctUntilChanged, skip, tap, withLatestFrom } from 'rxjs/operators';
+import { mergeMap, switchMap, map, filter, take, distinctUntilChanged, skip, tap, withLatestFrom, defaultIfEmpty } from 'rxjs/operators';
 import { ActionBGL } from '../../beagle/classes/action-bgl';
 import { concat, of, from, EMPTY, throwError } from 'rxjs';
-import { ofResolvedType } from '../../beagle/classes/async-actions-factory-bgl';
+import { ofResolvedType, makeErroredTypeBGL, makeRequestTypeBGL } from '../../beagle/classes/async-actions-factory-bgl';
 import { CorrelationBGL } from '../../beagle/classes/correlation-bgl';
 import { UserBone } from './user.bone';
 import { Router } from '@angular/router';
@@ -22,6 +22,7 @@ export interface AppErrorData {
   message: string;
   stack?: string;
 }
+export const appType = 'app';
 export interface AppState {
   ready: boolean;
   loading: boolean;
@@ -48,17 +49,17 @@ export interface AppSchema extends SchemaBGL {
   stopLoading: [void];
   startError: [AppErrorData];
   stopError: [void];
-  goto: [{ target: string, data: any }];
+  goto: [{ target: string, data?: any }];
 }
 export enum AppActionType {
-  initializeRequest = '[App Action Type] Initialize Request',
-  initializeResponse = '[App Action Type] Initialize Response',
-  setReady = '[App Action Type] Set Ready',
-  startLoading = '[App Action Type] Start Loaidng',
-  stopLoading = '[App Action Type] Stop Loading',
-  startError = '[App Action Type] Start Error',
-  stopError = '[App Action Type] Stop Error',
-  goto = '[App Action Type] Go To',
+  initializeRequest = '@app/initialize-request',
+  initializeResponse = '@app/initialize-response',
+  setReady = '@app/set-ready',
+  startLoading = '@app/start-loaidng',
+  stopLoading = '@app/stop-loading',
+  startError = '@app/start-error',
+  stopError = '@app/stop-error',
+  goto = '@app/go-to',
 }
 export interface AppInjectors {
   storage: StorageBone;
@@ -83,7 +84,7 @@ export class AppBone extends BoneBGL<AppState, AppSchema, AppInjectors> {
           stopError: new ActionConfigBGL(AppActionType.stopError),
           goto: new ActionConfigBGL(AppActionType.goto),
         },
-        new RawStoreConfigBGL('app', initialAppState, (state, action) => {
+        new RawStoreConfigBGL(appType, initialAppState, (state, action) => {
           switch (action.type) {
             case AppActionType.setReady:
               return { ...state, ready: action.payload };
@@ -122,7 +123,6 @@ export class AppBone extends BoneBGL<AppState, AppSchema, AppInjectors> {
         })
       )
     );
-    console.log(this);
   }
 
   @Effect({ dispatch: false })
@@ -148,9 +148,32 @@ export class AppBone extends BoneBGL<AppState, AppSchema, AppInjectors> {
     })
   );
 
+  @Effect({ dispatch: false })
+  private error$ = this.selectors.error.pipe(
+    skip(1),
+    distinctUntilChanged(),
+    withLatestFrom(this.selectors.errorData),
+    tap(([error, data]) => {
+      if (error) {
+        console.log('Error Start: ', data);
+      } else {
+        console.log('Error Stop.');
+      }
+    })
+  );
+
+  @Effect({ dispatch: true })
+  private startError$ = this.beagle.actions$.pipe(
+    filter(action => action.type === makeErroredTypeBGL(action.type)),
+    map((action: ActionBGL<{ error: AppErrorData }>) => this.actions.startError.create({
+      name: action.payload.error.name,
+      message: action.payload.error.message,
+    })),
+  );
+
   @Effect({ dispatch: true })
   private loadAsync$ = this.beagle.actions$.pipe(
-    filter((action: ActionBGL<any>) => action.type.includes('@ Request')),
+    filter((action: ActionBGL<any>) => action.type === makeRequestTypeBGL(action.type)),
     hasCorrelationTypes('loadasync'),
     hasCorrelationTypes('async'),
     mergeMap((action: ActionBGL<any>) => {
@@ -177,20 +200,24 @@ export class AppBone extends BoneBGL<AppState, AppSchema, AppInjectors> {
       const startLoading = this.actions.startLoading.create({ content: 'Initializing app ...' }, [ini]);
       const stopLoading = this.actions.stopLoading.create(undefined, [ini]);
       const getStorageRequest = this.injectors.storage.actions.get.createRequest(undefined, [ini]);
-      const getStorageResponse$ = this.asyncResolved(getStorageRequest);
+      const getStorageResponse$ = this.asyncResolved(getStorageRequest).pipe(defaultIfEmpty({ payload: {} }));
       const goto = (target: string) => this.actions.goto.create({ target, data: undefined }, [ini]);
 
       const switchStorageContent = (getStorageResponse: ActionBGL<StorageEntries>) => {
         if (getStorageResponse.payload.firstVisit !== false) {
-          const saveStorageRequest = this.injectors.storage.actions.save.createRequest({ firstVisit: false }, [ini]);
-          return from([saveStorageRequest, goto('/about')]);
+          return of(goto('/tutorial'));
         }
         if (getStorageResponse.payload.credentials) {
           const signinRequest = this.injectors.user.actions.signin.createRequest(getStorageResponse.payload.credentials, [ini]);
-          const signinResponse$ = this.asyncResolved(signinRequest);
-          return concat(of(signinRequest), signinResponse$, of(goto('/home')));
+          const signinResponse$ = this.asyncResolved(signinRequest).pipe(defaultIfEmpty({ payload: '/signin' }));
+          return concat(
+            of(signinRequest),
+            signinResponse$.pipe(
+              map(signinResponse => goto(typeof(signinResponse.payload) === 'string' ? signinResponse.payload : '/home'))
+            ),
+          );
         } else {
-          return from([goto('/contact')]);
+          return of(goto('/signin'));
         }
       };
 
