@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormControl, Validators } from '@angular/forms';
-import { UserBone } from 'src/app/bones/user.bone';
-import { AppBone } from 'src/app/bones/app.bone';
-import { CorrelationBGL } from 'src/beagle/classes/correlation-bgl';
+import { UserDuck } from 'src/app/ducks/user.duck';
+import { AppDuck } from 'src/app/ducks/app.duck';
+import { CorrelationD } from 'src/ducks/models/correlation';
 
 @Component({
   selector: 'app-page-signin',
@@ -15,7 +15,7 @@ export class PageSigninComponent implements OnInit {
   emailCtrl: FormControl;
   passwordCtrl: FormControl;
 
-  constructor(public user: UserBone, public app: AppBone) {
+  constructor(public user: UserDuck, public app: AppDuck) {
     this.makeForm();
   }
 
@@ -40,7 +40,10 @@ export class PageSigninComponent implements OnInit {
       email: this.emailCtrl.value,
       password: this.passwordCtrl.value,
     };
-    this.user.actions.signin.dispatchRequest(user, ['loadasync', 'PageSigninComponent@signin']);
+    const correlation = new CorrelationD('PageSigninComponent@signin');
+    const signin = this.user.actions.signIn.createAsyncRequest(user, [correlation]);
+    this.user.asyncResolvedOf(signin).subscribe(() => this.app.actions.goto.dispatch({ target: '/home' }, [correlation]));
+    this.user.dispatch(signin);
   }
 
 }

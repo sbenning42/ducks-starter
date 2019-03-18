@@ -13,7 +13,7 @@ export class UserGuard implements CanActivate {
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot
   ): boolean | UrlTree | Observable<boolean | UrlTree> | Promise<boolean | UrlTree> {
-    return this.user.storeManager.selectors.authentified.pipe(
+    return this.user.store.selectors.authentified.pipe(
       tap(canActivate => console.log('UserGuard@canActivate: ', canActivate))
     );
   }

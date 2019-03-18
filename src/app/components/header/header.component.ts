@@ -10,7 +10,7 @@ import { UserDuck } from 'src/app/ducks/user.duck';
 })
 export class HeaderComponent implements OnInit {
 
-  authentified$: Observable<boolean> = this.user.storeManager.selectors.authentified;
+  authentified$: Observable<boolean> = this.user.store.selectors.authentified;
 
   constructor(public app: AppDuck, public user: UserDuck) { }
 
@@ -18,7 +18,7 @@ export class HeaderComponent implements OnInit {
   }
 
   goto(target: string) {
-    this.app.actionsManager.goto.dispatch({ target });
+    this.app.actions.goto.dispatch({ target });
   }
 
 }

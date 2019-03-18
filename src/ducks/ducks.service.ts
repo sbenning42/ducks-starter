@@ -4,10 +4,11 @@ import { Actions, Effect } from "@ngrx/effects";
 import { ActionD } from "./models/action";
 import { DucksManagerD } from "./models/ducks-manager";
 import { hasCorrelationTypes, getCorrelationType, isAsyncRequestType, hasCorrelationIds, isAsyncCancelType } from "./tools/async";
-import { defer, Observable, of } from "rxjs";
-import { mergeMap, filter, map, catchError, defaultIfEmpty, takeUntil, first } from "rxjs/operators";
+import { Observable, of } from "rxjs";
+import { mergeMap, filter, map, catchError, defaultIfEmpty, takeUntil, first, tap } from "rxjs/operators";
 import { AsyncActionFactoryD } from "./models/async-action-factory";
 import { SYMD } from "./enums/sym";
+import { SyncActionFactoryD } from "./models/sync-action-factory";
 
 const asyncCorrelation = getCorrelationType(SYMD.ASYNC_CORRELATION);
 
@@ -38,6 +39,15 @@ export class DucksService {
                     filter(action => isAsyncCancelType(action.type)),
                 )),
             );
+        })
+    );
+
+    @Effect({ dispatch: false })
+    private sync$ = this.actions$.pipe(
+        map((action: ActionD<any>) => ({ action, factory: this.manager.getActionFactoryOf(action) as SyncActionFactoryD<any> })),
+        filter(({ factory }) => !!factory && !factory.config.async && !!factory.config.handler),
+        tap(({ action, factory }) => {
+           factory.config.handler(action.payload); 
         })
     );
 }

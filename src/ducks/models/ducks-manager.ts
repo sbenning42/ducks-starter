@@ -12,6 +12,7 @@ import { Duck } from "./duck";
 import { AsyncActionFactoryD } from "./async-action-factory";
 import { SyncActionFactoryD } from "./sync-action-factory";
 import { asyncResolvedOf, asyncErroredOf, asyncCanceledOf } from "../tools/async";
+import { DuckInjectorD } from "../interfaces/duck-injector";
 
 export class DucksManagerD {
     ducks = {};
@@ -32,33 +33,33 @@ export class DucksManagerD {
         }), {}) as ActionFactoryMapD<Config>;
     }
 
-    registerDuck<State, Schema extends ActionConfigSchemaD, Injectors extends {} = {}>(
+    registerDuck<State, Schema extends ActionConfigSchemaD, Injectors extends DuckInjectorD>(
         duck: Duck<State, Schema, Injectors>
     ) {
-        this.ducks[duck.storeConfig.type] = duck;
+        this.ducks[duck['storeConfig'].type] = duck;
     }
 
-    createDuck<State, Schema extends ActionConfigSchemaD, Injectors extends {} = {}>(
+    createDuck<State, Schema extends ActionConfigSchemaD, Injectors extends DuckInjectorD>(
         injectors: Injectors,
         storeConfig: StoreConfigD<State>,
         actionConfigMap: ActionConfigMapD<Schema>,
     ) {
-        const duck = new Duck(this, injectors, storeConfig, actionConfigMap);
+        const duck = new Duck(injectors, storeConfig, actionConfigMap);
         this.registerDuck(duck);
     }
 
     getDuckOf(action: ActionD<any>) {
         return Object.values(this.ducks)
-            .find((duck: Duck<any, any>) => Object.values(duck.actionsManager)
+            .find((duck: Duck<any, any, any>) => Object.values(duck.actions)
                 .some(manager => action.type.includes(manager.config.type))
-            ) as Duck<any, any>;
+            ) as Duck<any, any, any>;
     }
 
     getActionFactoryOf(action: ActionD<any>) {
         let factory: SyncActionFactoryD<any> | AsyncActionFactoryD<any>;
         Object.values(this.ducks)
-            .find((duck: Duck<any, any>) => {
-                factory = Object.values(duck.actionsManager)
+            .find((duck: Duck<any, any, any>) => {
+                factory = Object.values(duck.actions)
                     .find(thisFactory => action.type.includes(thisFactory.config.type));
                 return !!factory;   
             })

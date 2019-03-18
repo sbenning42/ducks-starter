@@ -7,6 +7,8 @@ import { ActionConfigTypeD } from "src/ducks/types/action-config-type";
 import { StoreConfigD } from "src/ducks/models/store-config";
 import { ActionConfigD } from "src/ducks/models/action-config";
 import { createAsyncResolvedType } from "src/ducks/tools/async";
+import { createActionConfigD } from "src/ducks/factories/create-action-config";
+import { DuckInjectorD } from "src/ducks/interfaces/duck-injector";
 
 export const storageType = 'storage2';
 
@@ -21,7 +23,7 @@ export const initialStorageState: StorageState = {
     loaded: false,
     entries: null,
 };
-export interface StorageInjector {
+export interface StorageInjector extends DuckInjectorD {
     storage: StorageService;
 }
 export enum STORAGE_TYPE {
@@ -43,9 +45,7 @@ export class StorageDuck extends Duck<StorageState, StorageSchema, StorageInject
         ducks: DucksService,
         storage: StorageService
     ) {
-        super(
-            ducks.manager,
-            { storage },
+        super({ manager: ducks.manager, storage },
             new StoreConfigD(storageType, initialStorageState, (state, action) => {
                 switch (action.type) {
                     case createAsyncResolvedType(STORAGE_TYPE.GET):
@@ -66,11 +66,28 @@ export class StorageDuck extends Duck<StorageState, StorageSchema, StorageInject
                 }
             }),
             {
-                get: new ActionConfigD(STORAGE_TYPE.GET, true, [], () => this.injectors.storage.get()),
-                save: new ActionConfigD(STORAGE_TYPE.SAVE, true, [], payload => this.injectors.storage.save(payload)),
-                remove: new ActionConfigD(STORAGE_TYPE.REMOVE, true, [], payload => this.injectors.storage.remove(payload)),
-                clear: new ActionConfigD(STORAGE_TYPE.CLEAR, true, [], () => this.injectors.storage.clear()),
+                get: createActionConfigD({
+                    type: STORAGE_TYPE.GET,
+                    async: true,
+                    handler: () => this.injectors.storage.get()
+                }),
+                save: createActionConfigD({
+                    type: STORAGE_TYPE.SAVE,
+                    async: true,
+                    handler: payload => this.injectors.storage.save(payload)
+                }),
+                remove: createActionConfigD({
+                    type: STORAGE_TYPE.REMOVE,
+                    async: true,
+                    handler: payload => this.injectors.storage.remove(payload)
+                }),
+                clear: createActionConfigD({
+                    type: STORAGE_TYPE.CLEAR,
+                    async: true,
+                    handler: () => this.injectors.storage.clear()
+                }),
             }
         );
     }
 }
+// new ActionConfigD(STORAGE_TYPE.REMOVE, true, [], payload => this.injectors.storage.remove(payload))

@@ -11,6 +11,7 @@ import { Effect, ofType } from "@ngrx/effects";
 import { map } from "rxjs/operators";
 import { ActionD } from "src/ducks/models/action";
 import { hasCorrelationTypes, getCorrelationType, createAsyncResolvedType } from "src/ducks/tools/async";
+import { DuckInjectorD } from "src/ducks/interfaces/duck-injector";
 
 export const userType = 'user';
 
@@ -39,7 +40,7 @@ export const initialUserState: UserState = {
     token: null,
 };
 
-export interface UserInjectors {
+export interface UserInjectors extends DuckInjectorD {
     storage: StorageDuck;
     user: MockUserService;
 }
@@ -69,9 +70,7 @@ export class UserDuck extends Duck<UserState, UserSchema, UserInjectors> {
         storage: StorageDuck,
         user: MockUserService,
     ) {
-        super(
-            ducks.manager,
-            { storage, user },
+        super({ manager: ducks.manager, storage, user },
             new StoreConfigD(userType, initialUserState, (state, action) => {
                 switch (action.type) {
                     case USER_TYPE.SET_CREDENTIALS:
@@ -101,28 +100,28 @@ export class UserDuck extends Duck<UserState, UserSchema, UserInjectors> {
     }
 
     @Effect({ dispatch: true })
-    private setCredentialsOnSignIn$ = this.ducks.actions$.pipe(
+    private setCredentialsOnSignIn$ = this.injectors.manager.actions$.pipe(
         ofType(
             createAsyncResolvedType(USER_TYPE.SIGN_IN),
-            createAsyncResolvedType(USER_TYPE.AUTO_SIGN_IN)
+            // createAsyncResolvedType(USER_TYPE.AUTO_SIGN_IN)
         ),
-        map((action: ActionD<UserCred>) => this.actionsManager.setCredentials.create(action.payload, ['sign-in-resolved'])),
+        map((action: ActionD<{ user: User, token: string }>) => this.actions.setCredentials.create(action.payload.user, ['sign-in-resolved'])),
     );
 
     @Effect({ dispatch: true })
-    private saveCredentials$ = this.ducks.actions$.pipe(
+    private saveCredentials$ = this.injectors.manager.actions$.pipe(
         ofType(USER_TYPE.SET_CREDENTIALS),
         hasCorrelationTypes('save-storage'),
-        map((action: ActionD<UserCred>) => this.injectors.storage.actionsManager.save.createAsyncRequest({
+        map((action: ActionD<UserCred>) => this.injectors.storage.actions.save.createAsyncRequest({
             credentials: action.payload
         }, [getCorrelationType('save-storage')(action)])),
     );
 
     @Effect({ dispatch: true })
-    private removeCredentials$ = this.ducks.actions$.pipe(
+    private removeCredentials$ = this.injectors.manager.actions$.pipe(
         ofType(USER_TYPE.REMOVE_CREDENTIALS),
         hasCorrelationTypes('remove-storage'),
-        map((action: ActionD<UserCred>) => this.injectors.storage.actionsManager.remove.createAsyncRequest([
+        map((action: ActionD<UserCred>) => this.injectors.storage.actions.remove.createAsyncRequest([
             'credentials',
         ], [getCorrelationType('remove-storage')(action)])),
     );

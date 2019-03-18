@@ -14,6 +14,7 @@ import { ActionD } from "src/ducks/models/action";
 import { concat, of, from, merge } from "rxjs";
 import { getCorrelationType, hasCorrelationTypes, hasCorrelationIds } from "src/ducks/tools/async";
 import { SYMD } from "src/ducks/enums/sym";
+import { DuckInjectorD } from "src/ducks/interfaces/duck-injector";
 
 export interface AppLoadingData {
   content: string;
@@ -69,7 +70,7 @@ export interface AppSchema extends ActionConfigSchemaD {
   goto: ActionConfigTypeD<{ target: string, data?: any }>;
 }
 
-export interface AppInjectors {
+export interface AppInjectors extends DuckInjectorD {
   storage: StorageDuck;
   user: UserDuck;
   router: Router;
@@ -83,9 +84,7 @@ export class AppDuck extends Duck<AppState, AppSchema, AppInjectors> {
         user: UserDuck,
         router: Router,
     ) {
-        super(
-            ducks.manager,
-            { storage, user, router },
+        super({ manager: ducks.manager, storage, user, router },
             new StoreConfigD(appType, initialAppState, (state, action) => {
                 switch (action.type) {
                     case APP_TYPE.INITIALIZE_RESPONSE:
@@ -140,27 +139,20 @@ export class AppDuck extends Duck<AppState, AppSchema, AppInjectors> {
     }
 
     @Effect({ dispatch: true })
-    private initialize$ = this.ducks.actions$.pipe(
+    private initialize$ = this.injectors.manager.actions$.pipe(
         ofType(APP_TYPE.INITIALIZE_REQUEST),
         mergeMap((initialize: ActionD<any>) => {
-            const appActions = this.actionsManager;
-            const userActions = this.injectors.user.actionsManager;
-            const storageActions = this.injectors.storage.actionsManager;
+            const appActions = this.actions;
+            const userActions = this.injectors.user.actions;
+            const storageActions = this.injectors.storage.actions;
             const init = getCorrelationType('app-initialize')(initialize);
             const startLoading = appActions.startLoading.create({ content: 'Initializing App ...' }, [init]);
             const stopLoading = appActions.stopLoading.create(undefined, [init]);
             const initializeResponse = appActions.initializeResponse.create(undefined, [init]);
             const getStorageRequest = storageActions.get.createAsyncRequest(undefined, [init]);
-            const getStorageResolved$ = this.ducks.asyncResolvedOf(getStorageRequest).pipe(
-                takeUntil(this.ducks.asyncErroredOf(getStorageRequest)),
-            );
-            const getStorageErrored$ = this.ducks.asyncErroredOf(getStorageRequest).pipe(
-                map(() => ({ payload: {} })),
-                takeUntil(this.ducks.asyncResolvedOf(getStorageRequest)),
-            );
             const getStorageFollowUp$ = merge(
-                getStorageResolved$,
-                getStorageErrored$,
+                this.injectors.manager.asyncResolvedOf(getStorageRequest),
+                this.injectors.manager.asyncErroredOf(getStorageRequest),
             ).pipe(
                 switchMap((getStorageResponse: ActionD<StorageEntries>) => {
                     if (getStorageResponse.payload.firstVisit !== false) {
@@ -170,7 +162,10 @@ export class AppDuck extends Duck<AppState, AppSchema, AppInjectors> {
                     } else {
                         const credentials = getStorageResponse.payload.credentials;
                         const signInRequest = userActions.autoSignIn.createAsyncRequest(credentials, [init]);
-                        const signInFollowUp$ = this.ducks.asyncResolvedOf(signInRequest).pipe(
+                        const signInFollowUp$ = merge(
+                            this.injectors.manager.asyncResolvedOf(signInRequest),
+                            this.injectors.manager.asyncErroredOf(signInRequest),
+                        ).pipe(
                             switchMap(() => {
                                 return of(appActions.goto.create({ target: '/home' }, [init]));
                             }),
@@ -188,10 +183,18 @@ export class AppDuck extends Duck<AppState, AppSchema, AppInjectors> {
     );
 
     @Effect({ dispatch: false })
-    private loading$ = this.storeManager.selectors.loading.pipe(
+    private goto$ = this.injectors.manager.actions$.pipe(
+        ofType(APP_TYPE.GOTO),
+        tap(({ payload: { target, data } }: ActionD<{ target: string, data?: any }>) => {
+            this.injectors.router.navigate([target], data ? { queryParams: data } : {});
+        }),
+    );
+
+    @Effect({ dispatch: false })
+    private loading$ = this.store.selectors.loading.pipe(
         skip(1),
         distinctUntilChanged(),
-        withLatestFrom(this.storeManager.selectors.loadingData),
+        withLatestFrom(this.store.selectors.loadingData),
         tap(([loading, datas]) => {
             if (loading) {
                 console.log('Start Loading: ', datas);
@@ -202,46 +205,46 @@ export class AppDuck extends Duck<AppState, AppSchema, AppInjectors> {
     );
 
     @Effect({ dispatch: true })
-    private asyncLoading$ = this.ducks.actions$.pipe(
+    private asyncLoading$ = this.injectors.manager.actions$.pipe(
         filter((action: ActionD<any>) => action.type !== APP_TYPE.START_LOADING),
         hasCorrelationTypes('@async-loading'),
         mergeMap((action: ActionD<any>) => {
             const async = getCorrelationType(SYMD.ASYNC_CORRELATION)(action);
             const asyncLoading = getCorrelationType('@async-loading')(action);
-            const startLoading = this.actionsManager.startLoading.create(asyncLoading.data, [asyncLoading]);
-            const stopLoading = this.actionsManager.stopLoading.create(undefined, [asyncLoading]);
+            const startLoading = this.actions.startLoading.create(asyncLoading.data, [asyncLoading]);
+            const stopLoading = this.actions.stopLoading.create(undefined, [asyncLoading]);
             return concat(
                 of(startLoading),
-                this.ducks.actions$.pipe(hasCorrelationIds(async.id), take(1), map(() => stopLoading)),
+                this.injectors.manager.actions$.pipe(hasCorrelationIds(async.id), take(1), map(() => stopLoading)),
             );
         }),
     );
 
     @Effect({ dispatch: true })
-    private loadingStart$ = this.ducks.actions$.pipe(
+    private loadingStart$ = this.injectors.manager.actions$.pipe(
         filter((action: ActionD<any>) => action.type !== APP_TYPE.START_LOADING),
         hasCorrelationTypes('@start-loading'),
         map((action: ActionD<any>) => {
             const startLoading = getCorrelationType('@start-loading')(action);
-            return this.actionsManager.startLoading.create(startLoading.data, [startLoading]);
+            return this.actions.startLoading.create(startLoading.data, [startLoading]);
         }),
     );
 
     @Effect({ dispatch: true })
-    private loadingStop$ = this.ducks.actions$.pipe(
+    private loadingStop$ = this.injectors.manager.actions$.pipe(
         filter((action: ActionD<any>) => action.type !== APP_TYPE.STOP_LOADING),
         hasCorrelationTypes('@stop-loading'),
         map((action: ActionD<any>) => {
             const stopLoading = getCorrelationType('@stop-loading')(action);
-            return this.actionsManager.stopLoading.create(undefined, [stopLoading]);
+            return this.actions.stopLoading.create(undefined, [stopLoading]);
         }),
     );
     
     @Effect({ dispatch: false })
-    private error$ = this.storeManager.selectors.error.pipe(
+    private error$ = this.store.selectors.error.pipe(
         skip(1),
         distinctUntilChanged(),
-        withLatestFrom(this.storeManager.selectors.errorData),
+        withLatestFrom(this.store.selectors.errorData),
         tap(([error, datas]) => {
             if (error) {
                 console.log('Start Error: ', datas);

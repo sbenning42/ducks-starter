@@ -12,18 +12,18 @@ import { AppDuck, AppLoadingData, AppErrorData } from './ducks/app.duck';
 })
 export class AppComponent {
 
-  ready$: Observable<boolean> = this.app.storeManager.selectors.ready;
-  loading$: Observable<boolean> = this.app.storeManager.selectors.loading;
-  loadingData$: Observable<AppLoadingData[]> = this.app.storeManager.selectors.loadingData;
-  error$: Observable<boolean> = this.app.storeManager.selectors.error;
-  errorData$: Observable<AppErrorData[]> = this.app.storeManager.selectors.errorData;
+  ready$: Observable<boolean> = this.app.store.selectors.ready;
+  loading$: Observable<boolean> = this.app.store.selectors.loading;
+  loadingData$: Observable<AppLoadingData[]> = this.app.store.selectors.loadingData;
+  error$: Observable<boolean> = this.app.store.selectors.error;
+  errorData$: Observable<AppErrorData[]> = this.app.store.selectors.errorData;
 
   constructor(
     public storageD: StorageDuck,
     public userD: UserDuck,
     public app: AppDuck,
   ) {
-    this.app.actionsManager.initializeRequest.dispatch(undefined);
+    this.app.actions.initializeRequest.dispatch(undefined);
   }
 
 }

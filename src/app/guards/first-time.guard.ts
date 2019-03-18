@@ -13,7 +13,7 @@ export class FirstTimeGuard implements CanActivate {
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot
   ): boolean | UrlTree | Observable<boolean | UrlTree> | Promise<boolean | UrlTree> {
-    return this.storage.storeManager.selectors.entries.pipe(
+    return this.storage.store.selectors.entries.pipe(
       map(entries => !!entries && entries.firstVisit === false),
       tap(canActivate => console.log('FirstTimeGuard@canActivate: ', canActivate))
     );

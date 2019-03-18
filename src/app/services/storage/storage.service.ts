@@ -17,9 +17,11 @@ export class StorageService {
         const key = localStorage.key(i);
         entries[key] = JSON.parse(localStorage.getItem(key));
       }
+      /*
       if (Math.random() < 1) {
         throw new Error('Random');
       }
+      */
       return of(entries);
     })));
   }

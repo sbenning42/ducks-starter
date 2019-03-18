@@ -15,8 +15,8 @@ export class PageTutorialComponent implements OnInit {
   }
 
   finishTutorial() {
-    this.storage.actionsManager.save.dispatchAsyncRequest({ firstVisit: false });
-    this.app.actionsManager.goto.dispatch({ target: '/signup' });
+    this.storage.actions.save.dispatchAsyncRequest({ firstVisit: false });
+    this.app.actions.goto.dispatch({ target: '/signup' });
   }
 
 }

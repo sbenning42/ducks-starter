@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormControl, Validators } from '@angular/forms';
-import { UserBone } from 'src/app/bones/user.bone';
-import { AppBone } from 'src/app/bones/app.bone';
+import { UserDuck } from 'src/app/ducks/user.duck';
+import { AppDuck } from 'src/app/ducks/app.duck';
 
 @Component({
   selector: 'app-page-signup',
@@ -14,7 +14,7 @@ export class PageSignupComponent implements OnInit {
   emailCtrl: FormControl;
   passwordCtrl: FormControl;
 
-  constructor(public user: UserBone, public app: AppBone) {
+  constructor(public user: UserDuck, public app: AppDuck) {
     this.makeForm();
   }
 
@@ -35,11 +35,11 @@ export class PageSignupComponent implements OnInit {
     if (this.userForm.invalid) {
       return ;
     }
-    const signup = this.user.actions.signup.createRequest({
+    const signup = this.user.actions.signUp.createAsyncRequest({
       email: this.emailCtrl.value,
       password: this.passwordCtrl.value,
     }, ['loadasync']);
-    this.user.asyncResolved(signup).subscribe(() => this.app.actions.goto.dispatch({
+    this.user.asyncResolvedOf(signup).subscribe(() => this.app.actions.goto.dispatch({
       target: '/signin',
       data: {
         userFormValue: this.userForm.value
