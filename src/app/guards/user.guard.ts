@@ -1,19 +1,19 @@
 import { Injectable } from '@angular/core';
 import { ActivatedRouteSnapshot, RouterStateSnapshot, UrlTree, CanActivate } from '@angular/router';
 import { Observable } from 'rxjs';
-import { UserBone } from '../bones/user.bone';
 import { tap } from 'rxjs/operators';
+import { UserDuck } from '../ducks/user.duck';
 
 @Injectable({
   providedIn: 'root'
 })
 export class UserGuard implements CanActivate {
-  constructor(public user: UserBone) {}
+  constructor(public user: UserDuck) {}
   canActivate(
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot
   ): boolean | UrlTree | Observable<boolean | UrlTree> | Promise<boolean | UrlTree> {
-    return this.user.selectors.authentified.pipe(
+    return this.user.storeManager.selectors.authentified.pipe(
       tap(canActivate => console.log('UserGuard@canActivate: ', canActivate))
     );
   }

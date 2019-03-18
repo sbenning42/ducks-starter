@@ -1,6 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { StorageBone } from 'src/app/bones/storage.bone';
-import { AppBone } from 'src/app/bones/app.bone';
 import { StorageDuck } from 'src/app/ducks/storage.duck';
 import { AppDuck } from 'src/app/ducks/app.duck';
 

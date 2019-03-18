@@ -8,17 +8,13 @@
 </ng-container>
 
 <ng-container *ngIf="error$ | async">
-  <ng-container *ngIf="errorData$ | async as errorData">
-    <section class="error">
-      <p (click)="eraseErrors(errorData)">{{ errorData | json }}</p>
-    </section>
-  </ng-container>
+  <section class="error">
+    <p>{{ errorData | json }}</p>
+  </section>
 </ng-container>
 
 <ng-container *ngIf="loading$ | async">
-  <ng-container *ngIf="loadingActions$ | async as loadingActions">
-    <section class="loading">
-      <p (click)="cancelAll(loadingActions)">{{ (loadingData$ | async) | json }}</p>
-    </section>
-  </ng-container>
+  <section class="loading">
+    <p>{{ (loadingData$ | async) | json }}</p>
+  </section>
 </ng-container>

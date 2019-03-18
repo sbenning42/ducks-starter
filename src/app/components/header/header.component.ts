@@ -1,6 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { AppBone } from 'src/app/bones/app.bone';
-import { UserBone } from 'src/app/bones/user.bone';
 import { Observable } from 'rxjs';
 import { AppDuck } from 'src/app/ducks/app.duck';
 import { UserDuck } from 'src/app/ducks/user.duck';
