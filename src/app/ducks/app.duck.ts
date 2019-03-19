@@ -9,9 +9,9 @@ import { DucksService } from "src/ducks/ducks.service";
 import { StoreConfigD } from "src/ducks/models/store-config";
 import { ActionConfigD } from "src/ducks/models/action-config";
 import { Effect, ofType } from "@ngrx/effects";
-import { mergeMap, skip, distinctUntilChanged, tap, withLatestFrom, switchMap, map, filter, take, takeUntil } from "rxjs/operators";
+import { mergeMap, skip, distinctUntilChanged, tap, withLatestFrom, switchMap, map, filter, take, takeUntil, finalize } from "rxjs/operators";
 import { ActionD } from "src/ducks/models/action";
-import { concat, of, from, merge } from "rxjs";
+import { concat, of, from, merge, EMPTY } from "rxjs";
 import { getCorrelationType, hasCorrelationTypes, hasCorrelationIds } from "src/ducks/tools/async";
 import { SYMD } from "src/ducks/enums/sym";
 import { DuckInjectorD } from "src/ducks/interfaces/duck-injector";
@@ -204,9 +204,12 @@ export class AppDuck extends Duck<AppState, AppSchema, AppInjectors> {
         })
     );
 
+    /**
+     * @todo: Infinite Action loop bug here
+     */
     @Effect({ dispatch: true })
     private asyncLoading$ = this.injectors.manager.actions$.pipe(
-        filter((action: ActionD<any>) => action.type !== APP_TYPE.START_LOADING),
+        filter((action: ActionD<any>) => action.type !== APP_TYPE.START_LOADING && action.type !== APP_TYPE.STOP_LOADING),
         hasCorrelationTypes('@async-loading'),
         mergeMap((action: ActionD<any>) => {
             const async = getCorrelationType(SYMD.ASYNC_CORRELATION)(action);
@@ -215,7 +218,11 @@ export class AppDuck extends Duck<AppState, AppSchema, AppInjectors> {
             const stopLoading = this.actions.stopLoading.create(undefined, [asyncLoading]);
             return concat(
                 of(startLoading),
-                this.injectors.manager.actions$.pipe(hasCorrelationIds(async.id), take(1), map(() => stopLoading)),
+                merge(
+                    this.asyncResolvedOf(action).pipe(hasCorrelationIds(async.id)),
+                    this.asyncErroredOf(action).pipe(hasCorrelationIds(async.id)),
+                    this.asyncCanceledOf(action).pipe(hasCorrelationIds(async.id)),
+                ).pipe(take(1), map(() => stopLoading)),
             );
         }),
     );

@@ -92,7 +92,7 @@ export class UserDuck extends Duck<UserState, UserSchema, UserInjectors> {
                 setCredentials: new ActionConfigD(USER_TYPE.SET_CREDENTIALS, false, ['save-storage']),
                 removeCredentials: new ActionConfigD(USER_TYPE.REMOVE_CREDENTIALS, false, ['remove-storage']),
                 signUp: new ActionConfigD(USER_TYPE.SIGN_UP, true, [], payload => this.injectors.user.signup(payload)),
-                signIn: new ActionConfigD(USER_TYPE.SIGN_IN, true, [], payload => this.injectors.user.signin(payload)),
+                signIn: new ActionConfigD(USER_TYPE.SIGN_IN, true, [{ type: '@async-loading', data: { content: 'test' } }], payload => this.injectors.user.signin(payload)),
                 signOut: new ActionConfigD(USER_TYPE.SIGN_OUT, true, [], payload => this.injectors.user.signout(payload)),
                 autoSignIn: new ActionConfigD(USER_TYPE.AUTO_SIGN_IN, true, [], payload => this.injectors.user.signin(payload)),
             }

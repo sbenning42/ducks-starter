@@ -18,11 +18,11 @@ export class AsyncActionFactoryD<Config extends ActionConfigTypeD<any, any>> {
         public config: ActionConfigD<Config>,
     ) {}
     private create<Payload>(type: string, payload: Payload, correlations: (string | CorrelationD | CorrelationWithDataD)[] = []) {
-        return new ActionD(type, payload, correlations.concat(this.config.correlations));
+        return new ActionD(type, payload, correlations);
     }
     
     createAsyncRequest(payload: Config['0'], correlations: (string | CorrelationD | CorrelationWithDataD)[] = []) {
-        return this.create(createAsyncRequestType(this.config.type), payload, correlations.concat(SYMD.ASYNC_CORRELATION));
+        return this.create(createAsyncRequestType(this.config.type), payload, correlations.concat([SYMD.ASYNC_CORRELATION]).concat(this.config.correlations));
     }
     
     createAsyncRetry(payload: Config['0'], correlations: (string | CorrelationD | CorrelationWithDataD)[] = []) {
