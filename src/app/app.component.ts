@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { StorageDuck } from './ducks/storage.duck';
 import { UserDuck } from './ducks/user.duck';
 import { AppDuck, AppLoadingData, AppErrorData } from './ducks/app.duck';
+import { test } from '../ducks/decorators/duck';
 
 
 @Component({
@@ -24,6 +25,7 @@ export class AppComponent {
     public app: AppDuck,
   ) {
     this.app.actions.initializeRequest.dispatch(undefined);
+    test();
   }
 
 }
