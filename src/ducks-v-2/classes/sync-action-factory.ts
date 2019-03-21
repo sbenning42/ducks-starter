@@ -3,9 +3,11 @@ import { ActionConfig } from "./action-config";
 import { Action } from "./action";
 import { CorrelationType } from "../types/correlation.type";
 import { Correlation } from "./correlation";
+import { DucksManager } from "./ducks-manager";
 
 export class SyncActionFactory<Type extends ActionType<any, undefined>> {
     constructor(
+        private ducks: DucksManager,
         public config: ActionConfig<Type>,
     ) {}
 
@@ -22,6 +24,12 @@ export class SyncActionFactory<Type extends ActionType<any, undefined>> {
                 }
             }) as Correlation[];
         return new Action<Type['0']>(this.config.type, payload, _correlations);
+    }
+
+    dispatch(payload: Type['0'], correlations: CorrelationType[] = []) {
+        const action = this.create(payload, correlations);
+        this.ducks.store.dispatch(action);
+        return action;
     }
 
 }

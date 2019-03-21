@@ -30,6 +30,7 @@ import { PageAboutComponent } from './pages/page-about/page-about.component';
 import { PageTutorialComponent } from './pages/page-tutorial/page-tutorial.component';
 import { PageSigninComponent } from './pages/page-signin/page-signin.component';
 import { PageSignupComponent } from './pages/page-signup/page-signup.component';
+import { Ducks2Module } from '../ducks-v-2/ducks.module';
 
 @NgModule({
   declarations: [
@@ -57,6 +58,7 @@ import { PageSignupComponent } from './pages/page-signup/page-signup.component';
     StoreDevtoolsModule.instrument({ maxAge: 25 }),
     StoreRouterConnectingModule.forRoot(),
     DucksModule,
+    Ducks2Module
   ],
   providers: [
     StorageService,
