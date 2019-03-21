@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Observable } from 'rxjs';
-import { AppDuck } from 'src/app/ducks/app.duck';
-import { UserDuck } from 'src/app/ducks/user.duck';
+import { AppDuck } from 'src/app/ducks-v-2/app.duck';
+import { UserDuck } from 'src/app/ducks-v-2/user.duck';
 
 @Component({
   selector: 'app-header',
@@ -10,7 +10,7 @@ import { UserDuck } from 'src/app/ducks/user.duck';
 })
 export class HeaderComponent implements OnInit {
 
-  authentified$: Observable<boolean> = this.user.store.selectors.authentified;
+  authentified$: Observable<boolean> = this.user.store.authentified;
 
   constructor(public app: AppDuck, public user: UserDuck) { }
 

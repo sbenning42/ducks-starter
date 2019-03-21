@@ -14,8 +14,8 @@ export class AsyncActionFactory<Type extends ActionType<any, any>> {
     ) {}
 
     createRequest(payload: Type['0'], correlations: CorrelationType[] = []) {
-        const _correlations = this.config.options.correlations
-            .concat(correlations)
+        const _correlations = correlations // this.config.options.correlations
+            // .concat(correlations)
             .map(correlation => {
                 if (typeof(correlation) === 'string') {
                     return new Correlation(correlation);
@@ -45,8 +45,8 @@ export class AsyncActionFactory<Type extends ActionType<any, any>> {
     }
 
     createResolved(payload: Type['1'], correlations: CorrelationType[]) {
-        const _correlations = this.config.options.correlations
-            .concat(correlations)
+        const _correlations = correlations // this.config.options.correlations
+            // .concat(correlations)
             .map(correlation => {
                 if (typeof(correlation) === 'string') {
                     return new Correlation(correlation);
@@ -60,8 +60,8 @@ export class AsyncActionFactory<Type extends ActionType<any, any>> {
     }
 
     createErrored(payload: { error: Error }, correlations: CorrelationType[]) {
-        const _correlations = this.config.options.correlations
-            .concat(correlations)
+        const _correlations = correlations // this.config.options.correlations
+            // .concat(correlations)
             .map(correlation => {
                 if (typeof(correlation) === 'string') {
                     return new Correlation(correlation);
@@ -75,8 +75,8 @@ export class AsyncActionFactory<Type extends ActionType<any, any>> {
     }
 
     createCanceled(correlations: CorrelationType[]) {
-        const _correlations = this.config.options.correlations
-            .concat(correlations)
+        const _correlations = correlations // this.config.options.correlations
+            // .concat(correlations)
             .map(correlation => {
                 if (typeof(correlation) === 'string') {
                     return new Correlation(correlation);

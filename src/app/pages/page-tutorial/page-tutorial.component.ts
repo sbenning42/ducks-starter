@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { StorageDuck } from 'src/app/ducks/storage.duck';
-import { AppDuck } from 'src/app/ducks/app.duck';
+import { StorageDuck } from 'src/app/ducks-v-2/storage.duck';
+import { AppDuck } from 'src/app/ducks-v-2/app.duck';
 
 @Component({
   selector: 'app-page-tutorial',
@@ -15,7 +15,7 @@ export class PageTutorialComponent implements OnInit {
   }
 
   finishTutorial() {
-    this.storage.actions.save.dispatchAsyncRequest({ firstVisit: false });
+    this.storage.actions.save.dispatchRequest({ firstVisit: false });
     this.app.actions.goto.dispatch({ target: '/signup' });
   }
 

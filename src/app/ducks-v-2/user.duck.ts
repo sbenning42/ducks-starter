@@ -115,7 +115,7 @@ export class UserDuck extends Duck<UserState, UserSchema, UserInjector> {
     }
 
     @Effect({ dispatch: true })
-    private saveStorage$ = this.ducks.actions$.pipe(
+    private saveCredentials$ = this.ducks.actions$.pipe(
         ofType(USER.SET_CREDENTIALS),
         filter((action: Action<UserCredentials>) => hasCorrelationType(action, '@save-storage')),
         map((action: Action<UserCredentials>) => {
@@ -125,7 +125,7 @@ export class UserDuck extends Duck<UserState, UserSchema, UserInjector> {
     );
 
     @Effect({ dispatch: true })
-    private removeStorage$ = this.ducks.actions$.pipe(
+    private removeCredentials$ = this.ducks.actions$.pipe(
         ofType(USER.SET_CREDENTIALS),
         filter((action: Action<UserCredentials>) => hasCorrelationType(action, '@remove-storage')),
         map((action: Action<UserCredentials>) => {

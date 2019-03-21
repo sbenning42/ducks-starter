@@ -3,7 +3,7 @@ import { DucksManager } from './classes/ducks-manager';
 import { Effect, Actions } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { Action } from './classes/action';
-import { filter, mergeMap, map, catchError, defaultIfEmpty, takeUntil } from 'rxjs/operators';
+import { filter, mergeMap, map, catchError, defaultIfEmpty, takeUntil, first } from 'rxjs/operators';
 import { hasCorrelationType, isRequestType, getCorrelationType, hasCorrelationId, isCancelType } from './tools/async-correlation';
 import { SYMBOL } from './enums/symbol';
 import { EMPTY, Observable, of } from 'rxjs';
@@ -40,7 +40,8 @@ export class DucksService extends DucksManager {
                 takeUntil(this.actions$.pipe(
                     filter(thisAction => hasCorrelationId(thisAction, async.id)),
                     filter(thisAction => isCancelType(thisAction.type)),
-                ))
+                )),
+                first(),
             );
         }),
     );

@@ -1,10 +1,9 @@
 import { Component } from '@angular/core';
 import { Observable } from 'rxjs';
-import { StorageDuck } from './ducks/storage.duck';
-import { UserDuck } from './ducks/user.duck';
-import { AppDuck, AppLoadingData, AppErrorData } from './ducks/app.duck';
-import { test } from '../ducks/decorators/duck';
-
+import { LoadingData, ErrorData, AppDuck } from './ducks-v-2/app.duck';
+import { UserDuck } from './ducks-v-2/user.duck';
+import { StorageDuck } from './ducks-v-2/storage.duck';
+import { Correlation } from 'src/ducks-v-2/classes/correlation';
 
 @Component({
   selector: 'app-root',
@@ -13,19 +12,19 @@ import { test } from '../ducks/decorators/duck';
 })
 export class AppComponent {
 
-  ready$: Observable<boolean> = this.app.store.selectors.ready;
-  loading$: Observable<boolean> = this.app.store.selectors.loading;
-  loadingData$: Observable<AppLoadingData[]> = this.app.store.selectors.loadingData;
-  error$: Observable<boolean> = this.app.store.selectors.error;
-  errorData$: Observable<AppErrorData[]> = this.app.store.selectors.errorData;
+  ready$: Observable<boolean> = this.app.store.ready;
+  loading$: Observable<boolean> = this.app.store.loading;
+  loadingData$: Observable<LoadingData[]> = this.app.store.loadingData;
+  error$: Observable<boolean> = this.app.store.error;
+  errorData$: Observable<ErrorData[]> = this.app.store.errorData;
 
   constructor(
-    public storageD: StorageDuck,
-    public userD: UserDuck,
+    public storage: StorageDuck,
+    public user: UserDuck,
     public app: AppDuck,
   ) {
-    this.app.actions.initializeRequest.dispatch(undefined);
-    test();
+    const fromComponent = new Correlation('AppComponent@constructor');
+    this.app.actions.initializeRequest.dispatch(undefined, [fromComponent]);
   }
 
 }
