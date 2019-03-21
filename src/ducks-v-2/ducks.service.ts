@@ -16,7 +16,7 @@ export class DucksService extends DucksManager {
         public store: Store<any>,
         public actions$: Actions<Action<any>>
     ) {
-        super(store);
+        super(store, actions$);
     }
     @Effect({ dispatch: true })
     private asyncCorrelation$ = this.actions$.pipe(
