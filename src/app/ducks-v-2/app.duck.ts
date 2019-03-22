@@ -11,9 +11,11 @@ import { ActionType } from "../../ducks-v-2/types/action.type";
 import { ActionConfig } from "../../ducks-v-2/classes/action-config";
 import { Effect, ofType } from "@ngrx/effects";
 import { mergeMap, switchMap, map, filter, distinctUntilChanged, skip, tap, withLatestFrom } from "rxjs/operators";
-import { getCorrelationType, hasCorrelationType } from "../../ducks-v-2/tools/async-correlation";
+import { getCorrelationType, hasCorrelationType, isErroredType } from "../../ducks-v-2/tools/async-correlation";
 import { of, concat, from } from "rxjs";
 import { Correlation } from "src/ducks-v-2/classes/correlation";
+import { Router } from "@angular/router";
+import { APP } from "../symbols/app.sym";
 
 export interface LoadingData {
     message: string;
@@ -47,19 +49,6 @@ export const initialAppState: AppState = {
     errorData: [],
 };
 
-export enum APP {
-    GOTO = '@app/goto',
-    INITIALIZE_REQUEST = '@app/initialize-request',
-    INITIALIZE_RESPONSE = '@app/initialize-response',
-    SET_READY = '@app/set-ready',
-    START_LOADING = '@app/start-loading',
-    STOP_LOADING = '@app/stop-loading',
-    CLEAR_LOADING = '@app/clear-loading',
-    START_ERROR = '@app/start-error',
-    STOP_ERROR = '@app/stop-error',
-    CLEAR_ERROR = '@app/clear-error',
-}
-
 export interface AppSchema extends ActionsSchema {
     goto: ActionType<string | { target: string, data?: any }>;
     initializeRequest: ActionType;
@@ -76,18 +65,21 @@ export interface AppSchema extends ActionsSchema {
 export interface AppInjector extends DuckInjector {
     user: UserDuck;
     storage: StorageDuck;
+    router: Router
 }
 
-export type AppPayloads = undefined;
+export type AppPayloads = undefined | string | { target: string, data?: any } | boolean | LoadingData | ErrorData;
 
 export function appReducer(state: AppState = initialAppState, { type, payload }: Action<AppPayloads>): AppState {
     switch (type) {
+        case APP.SET_READY:
+            return { ...state, ready: payload as boolean };
         case APP.START_LOADING:
             return {
                 ...state,
                 loading: true,
                 loadingCount: state.loadingCount + 1,
-                loadingData: [payload, ...state.loadingData]
+                loadingData: [payload as LoadingData, ...state.loadingData]
             };
         case APP.STOP_LOADING:
             return {
@@ -108,7 +100,7 @@ export function appReducer(state: AppState = initialAppState, { type, payload }:
                 ...state,
                 error: true,
                 errorCount: state.errorCount + 1,
-                errorData: [payload, ...state.errorData]
+                errorData: [payload as ErrorData, ...state.errorData]
             };
         case APP.STOP_ERROR:
             return {
@@ -138,13 +130,24 @@ export class AppDuck extends Duck<AppState, AppSchema, AppInjector> {
         public ducks: DucksService,
         public user: UserDuck,
         public storage: StorageDuck,
+        public router: Router,
     ) {
         super(
-            { ducks, user, storage },
+            { ducks, user, storage, router },
             {
                 goto: new ActionConfig(APP.GOTO),
-                initializeRequest: new ActionConfig(APP.INITIALIZE_REQUEST, { correlations: ['@initialize'] }),
-                initializeResponse: new ActionConfig(APP.INITIALIZE_RESPONSE, { correlations: ['@set-ready'] }),
+                initializeRequest: new ActionConfig(APP.INITIALIZE_REQUEST, {
+                    correlations: [
+                        APP.INIT_CORRELATION,
+                        { type: APP.START_LOADING_CORRELATION, data: { loadingData: { message: 'Initializing App ...' } } }
+                    ]
+                }),
+                initializeResponse: new ActionConfig(APP.INITIALIZE_RESPONSE, {
+                    correlations: [
+                        APP.SET_READY_CORRELATION,
+                        APP.STOP_LOADING_CORRELATION
+                    ]
+                }),
                 setReady: new ActionConfig(APP.SET_READY),
                 startLoading: new ActionConfig(APP.START_LOADING),
                 stopLoading: new ActionConfig(APP.STOP_LOADING),
@@ -158,6 +161,14 @@ export class AppDuck extends Duck<AppState, AppSchema, AppInjector> {
     }
 
     @Effect({ dispatch: true })
+    private startAsyncError$ = this.ducks.actions$.pipe(
+        filter((action: Action<any>) => isErroredType(action.type)),
+        map((action: Action<any>) => {
+            return this.actions.startError.create(action.payload, [{ type: '@async-errored', data: action.type }]);
+        })
+    );
+
+    @Effect({ dispatch: true })
     private initialize$ = this.ducks.actions$.pipe(
         ofType(APP.INITIALIZE_REQUEST),
         mergeMap((action: Action<undefined>) => {
@@ -165,16 +176,14 @@ export class AppDuck extends Duck<AppState, AppSchema, AppInjector> {
             const user = this.injector.user.actions;
             const storage = this.injector.storage.actions;
 
-            const init = getCorrelationType(action, '@initialize');
+            const init = getCorrelationType(action, APP.INIT_CORRELATION);
 
             const goTo = (target: string, data?: any) => of(app.goto.create({ target, data }, [init]));
-            const startLoading = app.startLoading.create({ message: 'Initializing App ...' }, [init]);
-            const stopLoading = app.stopLoading.create(undefined, [init]);
             const inititializeResponse = app.initializeResponse.create(undefined, [init]);
 
             const getRequest = storage.get.createRequest(undefined, [init]);
 
-            const next_2 = (nextAction: Action<{ user: User, token: string }>) => goTo(nextAction ? '/home' : 'signin');
+            const next_2 = (nextAction: Action<{ user: User, token: string }>) => goTo(nextAction ? '/home' : '/signin');
 
             const next_1 = (nextAction: Action<StorageEntries>) => {
                 if (!nextAction || nextAction.payload.firstVisit !== false) {
@@ -191,9 +200,9 @@ export class AppDuck extends Duck<AppState, AppSchema, AppInjector> {
             };
 
             return concat(
-                from([startLoading, getRequest]),
+                from([getRequest]),
                 this.resolved(getRequest).pipe(switchMap(next_1)),
-                from([stopLoading, inititializeResponse]),
+                from([inititializeResponse]),
             );
         })
     );
@@ -201,9 +210,80 @@ export class AppDuck extends Duck<AppState, AppSchema, AppInjector> {
     @Effect({ dispatch: true })
     private initalizeResponse$ = this.ducks.actions$.pipe(
         ofType(APP.INITIALIZE_RESPONSE),
-        filter((action: Action<AppPayloads>) => hasCorrelationType(action, '@set-ready')),
-        map((action: Action<AppPayloads>) => getCorrelationType(action, '@set-ready')),
+        filter((action: Action<AppPayloads>) => hasCorrelationType(action, APP.SET_READY_CORRELATION)),
+        map((action: Action<AppPayloads>) => getCorrelationType(action, APP.SET_READY_CORRELATION)),
         map((correlation: Correlation) => this.actions.setReady.create(true, [correlation])),
+    );
+
+    @Effect({ dispatch: false })
+    private goto$ = this.ducks.actions$.pipe(
+        ofType(APP.GOTO),
+        tap((action: Action<string | { target: string, data?: any }>) => {
+            const { target, data } = typeof(action.payload) === 'string'
+                ? { target: action.payload, data: {} }
+                : action.payload;
+            this.injector.router.navigate([target], { queryParams: data });
+        })
+    );
+
+    @Effect({ dispatch: true })
+    private startLoadingCorrelation$ = this.ducks.actions$.pipe(
+        filter((action: Action<any>) => action.type !== APP.START_LOADING),
+        filter((action: Action<any>) => hasCorrelationType(action, APP.START_LOADING_CORRELATION)),
+        map((action: Action<AppPayloads>) => getCorrelationType(action, APP.START_LOADING_CORRELATION)),
+        map((loading: Correlation<{ loadingData: LoadingData }>) => {
+            return this.actions.startLoading.create(loading.data ? loading.data.loadingData : undefined, [loading]);
+        })
+    );
+
+    @Effect({ dispatch: true })
+    private stopLoadingCorrelation$ = this.ducks.actions$.pipe(
+        filter((action: Action<any>) => action.type !== APP.STOP_LOADING),
+        filter((action: Action<any>) => hasCorrelationType(action, APP.STOP_LOADING_CORRELATION)),
+        map((action: Action<AppPayloads>) => getCorrelationType(action, APP.STOP_LOADING_CORRELATION)),
+        map((loading: Correlation) => {
+            return this.actions.stopLoading.create(undefined, [loading]);
+        })
+    );
+
+    @Effect({ dispatch: true })
+    private clearLoadingCorrelation$ = this.ducks.actions$.pipe(
+        filter((action: Action<any>) => action.type !== APP.CLEAR_LOADING),
+        filter((action: Action<any>) => hasCorrelationType(action, APP.CLEAR_LOADING_CORRELATION)),
+        map((action: Action<AppPayloads>) => getCorrelationType(action, APP.CLEAR_LOADING_CORRELATION)),
+        map((clear: Correlation) => {
+            return this.actions.clearLoading.create(undefined, [clear]);
+        })
+    );
+
+    @Effect({ dispatch: true })
+    private startErrorCorrelation$ = this.ducks.actions$.pipe(
+        filter((action: Action<any>) => action.type !== APP.START_ERROR),
+        filter((action: Action<any>) => hasCorrelationType(action, APP.START_ERROR_CORRELATION)),
+        map((action: Action<AppPayloads>) => getCorrelationType(action, APP.START_ERROR_CORRELATION)),
+        map((error: Correlation<{ errorData: ErrorData }>) => {
+            return this.actions.startError.create(error.data ? error.data.errorData : undefined, [error]);
+        })
+    );
+
+    @Effect({ dispatch: true })
+    private stopErrorCorrelation$ = this.ducks.actions$.pipe(
+        filter((action: Action<any>) => action.type !== APP.STOP_ERROR),
+        filter((action: Action<any>) => hasCorrelationType(action, APP.STOP_ERROR_CORRELATION)),
+        map((action: Action<AppPayloads>) => getCorrelationType(action, APP.STOP_ERROR_CORRELATION)),
+        map((error: Correlation) => {
+            return this.actions.stopError.create(undefined, [error]);
+        })
+    );
+
+    @Effect({ dispatch: true })
+    private clearErrorCorrelation$ = this.ducks.actions$.pipe(
+        filter((action: Action<any>) => action.type !== APP.CLEAR_ERROR),
+        filter((action: Action<any>) => hasCorrelationType(action, APP.CLEAR_ERROR_CORRELATION)),
+        map((action: Action<AppPayloads>) => getCorrelationType(action, APP.CLEAR_ERROR_CORRELATION)),
+        map((clear: Correlation) => {
+            return this.actions.clearError.create(undefined, [clear]);
+        })
     );
 
     @Effect({ dispatch: false })
@@ -227,7 +307,7 @@ export class AppDuck extends Duck<AppState, AppSchema, AppInjector> {
     );
 
     @Effect({ dispatch: false })
-    private startError$ = this.store.loading.pipe(
+    private startError$ = this.store.error.pipe(
         distinctUntilChanged(),
         skip(1),
         filter(error => error),

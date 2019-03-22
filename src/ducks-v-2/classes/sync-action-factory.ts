@@ -12,7 +12,7 @@ export class SyncActionFactory<Type extends ActionType<any, undefined>> {
     ) {}
 
     create(payload: Type['0'], correlations: CorrelationType[] = []) {
-        const _correlations = (this.config.options.correlations || [])
+        const _correlations = this.config.options.correlations
             .concat(correlations)
             .map(correlation => {
                 if (typeof(correlation) === 'string') {

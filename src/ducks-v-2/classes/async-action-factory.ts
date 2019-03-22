@@ -13,9 +13,41 @@ export class AsyncActionFactory<Type extends ActionType<any, any>> {
         public config: ActionConfig<Type>,
     ) {}
 
+    private getCorrelationsFor(sym: string) {
+        return this.config.options.correlations.filter(correlation => {
+            if (typeof(correlation) !== 'string'
+                && correlation.data
+                && typeof(correlation.data.for) === 'string'
+            ) {
+                return correlation.data.for.includes(sym);
+            }
+            return sym === SYMBOL.REQUEST;
+        });
+    }
+
+    private getRequestCorrelations() {
+        return this.getCorrelationsFor(SYMBOL.REQUEST)
+    }
+    
+    private getCancelCorrelations() {
+        return this.getCorrelationsFor(SYMBOL.CANCEL)
+    }
+    
+    private getResolvedCorrelations() {
+        return this.getCorrelationsFor(SYMBOL.RESOLVED)
+    }
+    
+    private getErroredCorrelations() {
+        return this.getCorrelationsFor(SYMBOL.ERRORED)
+    }
+    
+    private getCanceledCorrelations() {
+        return this.getCorrelationsFor(SYMBOL.CANCELED)
+    }
+
     createRequest(payload: Type['0'], correlations: CorrelationType[] = []) {
-        const _correlations = correlations // this.config.options.correlations
-            // .concat(correlations)
+        const _correlations = this.getRequestCorrelations()
+            .concat(correlations)
             .map(correlation => {
                 if (typeof(correlation) === 'string') {
                     return new Correlation(correlation);
@@ -30,7 +62,7 @@ export class AsyncActionFactory<Type extends ActionType<any, any>> {
     }
 
     createCancel(correlations: CorrelationType[]) {
-        const _correlations = this.config.options.correlations
+        const _correlations = this.getCancelCorrelations()
             .concat(correlations)
             .map(correlation => {
                 if (typeof(correlation) === 'string') {
@@ -45,8 +77,8 @@ export class AsyncActionFactory<Type extends ActionType<any, any>> {
     }
 
     createResolved(payload: Type['1'], correlations: CorrelationType[]) {
-        const _correlations = correlations // this.config.options.correlations
-            // .concat(correlations)
+        const _correlations = this.getResolvedCorrelations()
+            .concat(correlations)
             .map(correlation => {
                 if (typeof(correlation) === 'string') {
                     return new Correlation(correlation);
@@ -60,8 +92,8 @@ export class AsyncActionFactory<Type extends ActionType<any, any>> {
     }
 
     createErrored(payload: { error: Error }, correlations: CorrelationType[]) {
-        const _correlations = correlations // this.config.options.correlations
-            // .concat(correlations)
+        const _correlations = this.getErroredCorrelations()
+            .concat(correlations)
             .map(correlation => {
                 if (typeof(correlation) === 'string') {
                     return new Correlation(correlation);
@@ -75,8 +107,8 @@ export class AsyncActionFactory<Type extends ActionType<any, any>> {
     }
 
     createCanceled(correlations: CorrelationType[]) {
-        const _correlations = correlations // this.config.options.correlations
-            // .concat(correlations)
+        const _correlations = this.getCanceledCorrelations()
+            .concat(correlations)
             .map(correlation => {
                 if (typeof(correlation) === 'string') {
                     return new Correlation(correlation);

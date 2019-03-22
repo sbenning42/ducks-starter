@@ -18,6 +18,7 @@ export class DucksService extends DucksManager {
     ) {
         super(store, actions$);
     }
+
     @Effect({ dispatch: true })
     private asyncCorrelation$ = this.actions$.pipe(
         filter(action => hasCorrelationType(action, SYMBOL.ASYNC_CORRELATION)),
@@ -35,7 +36,13 @@ export class DucksService extends DucksManager {
             const async = getCorrelationType(request, SYMBOL.ASYNC_CORRELATION);
             return handler(request.payload).pipe(
                 map((result: any) => factory.createResolved(result, [async])),
-                catchError((error: Error) => of(factory.createErrored({ error }, [async]))),
+                catchError((error: Error) => of(factory.createErrored({
+                    error: {
+                        name: error.name,
+                        message: error.message,
+                        // stack: error.stack
+                    }
+                }, [async]))),
                 defaultIfEmpty(factory.createCanceled([async])),
                 takeUntil(this.actions$.pipe(
                     filter(thisAction => hasCorrelationId(thisAction, async.id)),

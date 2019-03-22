@@ -9,6 +9,7 @@ import { ActionConfig } from "../../ducks-v-2/classes/action-config";
 import { Action } from "../../ducks-v-2/classes/action";
 import { DucksService } from "../../ducks-v-2/ducks.service";
 import { resolvedType } from "../../ducks-v-2/tools/async-correlation";
+import { STORAGE } from "../symbols/storage.sym";
 
 /**
  * Define interfaces you may use in actions.
@@ -37,16 +38,6 @@ const initialStorage: StorageState = {
     loaded: false,
     entries: null,
 };
-
-/**
- * Define the types for actions
- */
-export enum STORAGE {
-    GET = '@storage/get',
-    SAVE = '@storage/save',
-    REMOVE = '@storage/remove',
-    CLEAR = '@storage/clear',
-}
 
 /**
  * Define the payload type and optional async result type

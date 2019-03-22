@@ -9,7 +9,9 @@ import {
     hasCorrelationId,
     isResolvedType,
     isErroredType,
-    isCanceledType
+    isCanceledType,
+    isRequestType,
+    isCancelType
 } from '../tools/async-correlation';
 import { SYMBOL } from '../enums/symbol';
 import { DuckInjector } from '../interfaces/duck-injector';
@@ -18,7 +20,7 @@ import { StoreConfig } from './store-config';
 import { select, createSelector } from '@ngrx/store';
 import { Action } from './action';
 import { of } from 'rxjs';
-import { filter, switchMap, take } from 'rxjs/operators';
+import { filter, switchMap, take, tap } from 'rxjs/operators';
 
 export class Duck<State, Schema extends ActionsSchema, Injector extends DuckInjector> {
     
@@ -66,8 +68,10 @@ export class Duck<State, Schema extends ActionsSchema, Injector extends DuckInje
         const async = getCorrelationType(action, SYMBOL.ASYNC_CORRELATION);
         return this.injector.ducks.actions$.pipe(
             filter((thisAction: Action<any>) => hasCorrelationId(thisAction, async.id)),
+            filter((thisAction: Action<any>) => !isRequestType(thisAction.type) && !isCancelType(thisAction.type)),
             take(1),
             switchMap((thisAction: Action<any>) => of(isResolvedType(thisAction.type) ? thisAction : undefined)),
+            tap((thisAction: Action<any>) => console.log('thisAction@resolved: ', thisAction)),
         );
     }
 
@@ -75,8 +79,10 @@ export class Duck<State, Schema extends ActionsSchema, Injector extends DuckInje
         const async = getCorrelationType(action, SYMBOL.ASYNC_CORRELATION);
         return this.injector.ducks.actions$.pipe(
             filter((thisAction: Action<any>) => hasCorrelationId(thisAction, async.id)),
+            filter((thisAction: Action<any>) => !isRequestType(thisAction.type) && !isCancelType(thisAction.type)),
             take(1),
             switchMap((thisAction: Action<any>) => of(isErroredType(thisAction.type) ? thisAction : undefined)),
+            tap((thisAction: Action<any>) => console.log('thisAction@errored: ', thisAction)),
         );
     }
 
@@ -84,8 +90,10 @@ export class Duck<State, Schema extends ActionsSchema, Injector extends DuckInje
         const async = getCorrelationType(action, SYMBOL.ASYNC_CORRELATION);
         return this.injector.ducks.actions$.pipe(
             filter((thisAction: Action<any>) => hasCorrelationId(thisAction, async.id)),
+            filter((thisAction: Action<any>) => !isRequestType(thisAction.type) && !isCancelType(thisAction.type)),
             take(1),
             switchMap((thisAction: Action<any>) => of(isCanceledType(thisAction.type) ? thisAction : undefined)),
+            tap((thisAction: Action<any>) => console.log('thisAction@canceled: ', thisAction)),
         );
     }
 }

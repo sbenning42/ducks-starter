@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormControl, Validators } from '@angular/forms';
-import { UserDuck } from 'src/app/ducks-v-2/user.duck';
+import { UserDuck, UserCredentials } from 'src/app/ducks-v-2/user.duck';
 import { AppDuck } from 'src/app/ducks-v-2/app.duck';
 import { Correlation } from 'src/ducks-v-2/classes/correlation';
 
@@ -16,7 +16,6 @@ export class PageSigninComponent implements OnInit {
   passwordCtrl: FormControl;
 
   constructor(public user: UserDuck, public app: AppDuck) {
-    this.makeForm();
   }
 
   ngOnInit() {
@@ -36,16 +35,18 @@ export class PageSigninComponent implements OnInit {
     if (this.userForm.invalid) {
       return ;
     }
-    const user = {
+    const credentials: UserCredentials = {
       email: this.emailCtrl.value,
       password: this.passwordCtrl.value,
     };
     const fromComponent = new Correlation('PageSigninComponent@signin');
-    const signin = this.user.actions.authenticate.createRequest(user, [fromComponent]);
-    this.user.resolved(signin).subscribe(action => {
-      this.app.actions.goto.dispatch(action ? '/home' : '/signin', [fromComponent]);
+    const authenticate = this.user.actions.authenticate.createRequest(credentials, [fromComponent]);
+    this.user.resolved(authenticate).subscribe(action => {
+      if (action) {
+        this.app.actions.goto.dispatch('/home', [fromComponent]);
+      }
     });
-    this.user.dispatch(signin);
+    this.user.dispatch(authenticate);
   }
 
 }

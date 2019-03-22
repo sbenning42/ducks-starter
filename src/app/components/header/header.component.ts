@@ -12,7 +12,10 @@ export class HeaderComponent implements OnInit {
 
   authentified$: Observable<boolean> = this.user.store.authentified;
 
-  constructor(public app: AppDuck, public user: UserDuck) { }
+  constructor(
+    public app: AppDuck,
+    public user: UserDuck
+  ) { }
 
   ngOnInit() {
   }

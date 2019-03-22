@@ -1,4 +1,4 @@
-<ng-container>
+<ng-container *ngIf="showHeader$ | async">
   <app-header></app-header>
 </ng-container>
 <ng-container *ngIf="ready$ | async">
@@ -9,8 +9,9 @@
 
 <ng-container *ngIf="error$ | async">
   <section class="error">
-    <p>{{ errorData | json }}</p>
+    <p>{{ (errorData$ | async) | json }}</p>
   </section>
+  <button (click)="clearError()">CLEAR</button>
 </ng-container>
 
 <ng-container *ngIf="loading$ | async">

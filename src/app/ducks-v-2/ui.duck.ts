@@ -7,6 +7,7 @@ import { DucksService } from "src/ducks-v-2/ducks.service";
 import { StoreConfig } from "src/ducks-v-2/classes/store-config";
 import { Action } from "src/ducks-v-2/classes/action";
 import { ActionConfig } from "src/ducks-v-2/classes/action-config";
+import { UI } from "../symbols/ui.sym";
 
 export const uiSelector = 'ui';
 
@@ -19,10 +20,6 @@ export const initialUiState: UiState = {
 };
 
 export interface UiInjector extends DuckInjector {}
-
-export enum UI {
-    SET_SHOW_HEADER = '@ui/set-show-header',
-}
 
 export interface UiSchema extends ActionsSchema {
     setShowHeader: ActionType<boolean>,

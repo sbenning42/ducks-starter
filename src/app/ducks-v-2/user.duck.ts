@@ -12,6 +12,9 @@ import { DucksService } from "../../ducks-v-2/ducks.service";
 import { ofType, Effect } from "@ngrx/effects";
 import { filter, map } from "rxjs/operators";
 import { hasCorrelationType, getCorrelationType, resolvedType } from "../../ducks-v-2/tools/async-correlation";
+import { SYMBOL } from "src/ducks-v-2/enums/symbol";
+import { APP } from "../symbols/app.sym";
+import { USER } from "../symbols/user.sym";
 
 export interface UserCredentials {
     email: string;
@@ -40,14 +43,6 @@ export const initialUserState: UserState = {
     token: null,
 };
 
-export enum USER {
-    SET_CREDENTIALS = '@user/set-credentials',
-    REMOVE_CREDENTIALS = '@user/remove-credentials',
-    REGISTER = '@user/register',
-    AUTHENTICATE = '@user/authenticate',
-    REVOKE = '@user/revoke',
-}
-
 export interface UserSchema extends ActionsSchema {
     setCredentials: ActionType<UserCredentials>;
     removeCredentials: ActionType;
@@ -63,7 +58,7 @@ export interface UserInjector extends DuckInjector {
     storage: StorageDuck;
 }
 
-export function userReducer(state: UserState, { type, payload }: Action<UserPayloads>): UserState {
+export function userReducer(state: UserState = initialUserState, { type, payload }: Action<UserPayloads>): UserState {
     switch (type) {
         case USER.SET_CREDENTIALS:
             return { ...state, credentials: payload as UserCredentials };
@@ -95,19 +90,32 @@ export class UserDuck extends Duck<UserState, UserSchema, UserInjector> {
         super(
             { ducks, user, storage },
             {
-                setCredentials: new ActionConfig(USER.SET_CREDENTIALS, { correlations: ['@save-storage'] }),
-                removeCredentials: new ActionConfig(USER.REMOVE_CREDENTIALS, { correlations: ['@remove-storage'] }),
+                setCredentials: new ActionConfig(USER.SET_CREDENTIALS, { correlations: [USER.SAVE_CREDENTIALS_CORRELATION] }),
+                removeCredentials: new ActionConfig(USER.REMOVE_CREDENTIALS, { correlations: [USER.REMOVE_CREDENTIALS_CORRELATION] }),
                 register: new ActionConfig(USER.REGISTER, {
                     isAsync: true,
                     handler: (payload: Partial<User>) => this.user.signup(payload),
+                    correlations: [
+                        { type: APP.START_LOADING_CORRELATION, data: { loadingData: { message: 'User Register ...' } } },
+                        { type: APP.STOP_LOADING_CORRELATION, data: { for: `${SYMBOL.RESOLVED} ${SYMBOL.ERRORED} ${SYMBOL.CANCELED}` } }
+                    ]
                 }),
                 authenticate: new ActionConfig(USER.AUTHENTICATE, {
                     isAsync: true,
                     handler: (payload: UserCredentials) => this.user.signin(payload),
+                    correlations: [
+                        { type: APP.START_LOADING_CORRELATION, data: { loadingData: { message: 'User Authenticate ...' } } },
+                        { type: APP.STOP_LOADING_CORRELATION, data: { for: `${SYMBOL.RESOLVED} ${SYMBOL.ERRORED} ${SYMBOL.CANCELED}` } },
+                        { type: USER.SET_CREDENTIALS_CORRELATION, data: { for: SYMBOL.RESOLVED } }
+                    ]
                 }),
                 revoke: new ActionConfig(USER.REVOKE, {
                     isAsync: true,
                     handler: ({ id }: { id: string, token: string }) => this.user.signout(id),
+                    correlations: [
+                        { type: APP.START_LOADING_CORRELATION, data: { loadingData: { message: 'User Revoke ...' } } },
+                        { type: APP.STOP_LOADING_CORRELATION, data: { for: `${SYMBOL.RESOLVED} ${SYMBOL.ERRORED} ${SYMBOL.CANCELED}` } }
+                    ]
                 }),
             },
             new StoreConfig<UserState>(userSelector, initialUserState, userReducer),
@@ -115,11 +123,25 @@ export class UserDuck extends Duck<UserState, UserSchema, UserInjector> {
     }
 
     @Effect({ dispatch: true })
+    private setCredentials$ = this.ducks.actions$.pipe(
+        ofType(resolvedType(USER.AUTHENTICATE)),
+        filter((action: Action<{ user: User, token: string }>) => hasCorrelationType(action, USER.SET_CREDENTIALS_CORRELATION)),
+        map((action: Action<{ user: User, token: string }>) => {
+            const correlation = getCorrelationType(action, USER.SET_CREDENTIALS_CORRELATION);
+            const credentials = {
+                email: action.payload.user.email,
+                password: action.payload.user.password,
+            };
+            return this.actions.setCredentials.create(credentials, [correlation]);
+        })
+    );
+
+    @Effect({ dispatch: true })
     private saveCredentials$ = this.ducks.actions$.pipe(
         ofType(USER.SET_CREDENTIALS),
-        filter((action: Action<UserCredentials>) => hasCorrelationType(action, '@save-storage')),
+        filter((action: Action<UserCredentials>) => hasCorrelationType(action, USER.SAVE_CREDENTIALS_CORRELATION)),
         map((action: Action<UserCredentials>) => {
-            const correlation = getCorrelationType(action, '@save-storage');
+            const correlation = getCorrelationType(action, USER.SAVE_CREDENTIALS_CORRELATION);
             return this.injector.storage.actions.save.createRequest({ credentials: action.payload }, [correlation]);
         })
     );
@@ -127,9 +149,9 @@ export class UserDuck extends Duck<UserState, UserSchema, UserInjector> {
     @Effect({ dispatch: true })
     private removeCredentials$ = this.ducks.actions$.pipe(
         ofType(USER.SET_CREDENTIALS),
-        filter((action: Action<UserCredentials>) => hasCorrelationType(action, '@remove-storage')),
+        filter((action: Action<UserCredentials>) => hasCorrelationType(action, USER.REMOVE_CREDENTIALS_CORRELATION)),
         map((action: Action<UserCredentials>) => {
-            const correlation = getCorrelationType(action, '@remove-storage');
+            const correlation = getCorrelationType(action, USER.REMOVE_CREDENTIALS_CORRELATION);
             return this.injector.storage.actions.remove.createRequest(['credentials'], [correlation]);
         }),
     );

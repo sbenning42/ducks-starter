@@ -30,6 +30,10 @@ import { PageAboutComponent } from './pages/page-about/page-about.component';
 import { PageTutorialComponent } from './pages/page-tutorial/page-tutorial.component';
 import { PageSigninComponent } from './pages/page-signin/page-signin.component';
 import { PageSignupComponent } from './pages/page-signup/page-signup.component';
+import { UiDuck } from './ducks-v-2/ui.duck';
+import { MockCategoriesService } from './services/mock-categories/mock-categories.service';
+import { MockVariantsService } from './services/mock-variants/mock-variants.service';
+import { MockProductsService } from './services/mock-products/mock-products.service';
 
 @NgModule({
   declarations: [
@@ -61,9 +65,13 @@ import { PageSignupComponent } from './pages/page-signup/page-signup.component';
   providers: [
     StorageService,
     MockUserService,
+    MockCategoriesService,
+    MockProductsService,
+    MockVariantsService,
     StorageDuck,
     UserDuck,
     AppDuck,
+    UiDuck,
   ],
   bootstrap: [AppComponent]
 })
