@@ -1,8 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { StorageDuck } from 'src/app/ducks-v-2/storage.duck';
-import { AppDuck } from 'src/app/ducks-v-2/app.duck';
-import { UiDuck } from 'src/app/ducks-v-2/ui.duck';
-import { Correlation } from 'src/ducks-v-2/classes/correlation';
+import { StorageStore } from 'src/z-stores/storage-z-store';
+import { Correlation } from 'src/z/classes';
 
 @Component({
   selector: 'app-page-tutorial',
@@ -12,25 +10,20 @@ import { Correlation } from 'src/ducks-v-2/classes/correlation';
 export class PageTutorialComponent implements OnInit, OnDestroy {
 
   constructor(
-    public storage: StorageDuck,
-    public app: AppDuck,
-    public ui: UiDuck
+    public storage: StorageStore,
   ) { }
 
   ngOnInit() {
     const fromComponent = new Correlation('PageTutorialComponent@ngOnInit');
-    this.ui.actions.setShowHeader.dispatch(false, [fromComponent]);
   }
 
   ngOnDestroy() {
     const fromComponent = new Correlation('PageTutorialComponent@ngOnDestroy');
-    this.ui.actions.setShowHeader.dispatch(true, [fromComponent]);
   }
 
   finishTutorial() {
     const fromComponent = new Correlation('PageTutorialComponent@finishTutorial');
-    this.storage.actions.save.dispatchRequest({ firstVisit: false }, [fromComponent]);
-    this.app.actions.goto.dispatch({ target: '/signup' }, [fromComponent]);
+    this.storage.zstore.save.dispatchRequest({ firstVisit: false }, [fromComponent]);
   }
 
 }

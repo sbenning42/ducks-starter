@@ -4,7 +4,7 @@ import { CorrelationType } from '../types/correlation.type';
 import { Correlation } from './correlation';
 import { Action } from './action';
 import { SYMBOL } from '../enums/symbol';
-import { requestType, cancelType, resolvedType, erroredType, canceledType } from '../tools/async-correlation';
+import { requestType, cancelType, resolvedType, erroredType, canceledType, getCorrelationType } from '../tools/async-correlation';
 import { DucksManager } from './ducks-manager';
 
 export class AsyncActionFactory<Type extends ActionType<any, any>> {
@@ -61,8 +61,9 @@ export class AsyncActionFactory<Type extends ActionType<any, any>> {
         return new Action<Type['0']>(requestType(this.config.type), payload, _correlations);
     }
 
-    createCancel(correlations: CorrelationType[]) {
+    createCancel(action: Action<any>, correlations: CorrelationType[] = []) {
         const _correlations = this.getCancelCorrelations()
+            .concat([getCorrelationType(action, SYMBOL.ASYNC_CORRELATION)])
             .concat(correlations)
             .map(correlation => {
                 if (typeof(correlation) === 'string') {
@@ -127,10 +128,10 @@ export class AsyncActionFactory<Type extends ActionType<any, any>> {
         return action;
     }
 
-    dispatchCancel(correlations: CorrelationType[]) {
-        const action = this.createCancel(correlations);
-        this.ducks.store.dispatch(action);
-        return action;
+    dispatchCancel(action: Action<any>, correlations: CorrelationType[] = []) {
+        const thisAction = this.createCancel(action);
+        this.ducks.store.dispatch(thisAction);
+        return thisAction;
     }
 
     /*

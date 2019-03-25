@@ -3,12 +3,13 @@ import { DucksManager } from './classes/ducks-manager';
 import { Effect, Actions } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { Action } from './classes/action';
-import { filter, mergeMap, map, catchError, defaultIfEmpty, takeUntil, first } from 'rxjs/operators';
+import { filter, mergeMap, map, catchError, defaultIfEmpty, takeUntil, first, tap } from 'rxjs/operators';
 import { hasCorrelationType, isRequestType, getCorrelationType, hasCorrelationId, isCancelType } from './tools/async-correlation';
 import { SYMBOL } from './enums/symbol';
 import { EMPTY, Observable, of } from 'rxjs';
 import { AsyncActionHandlerType } from './types/async-action-handler.type';
 import { AsyncActionFactory } from './classes/async-action-factory';
+import { environment } from 'src/environments/environment';
 
 @Injectable()
 export class DucksService extends DucksManager {
@@ -18,6 +19,12 @@ export class DucksService extends DucksManager {
     ) {
         super(store, actions$);
     }
+
+    @Effect({ dispatch: false })
+    private logAllActions$ = this.actions$.pipe(
+        filter((action: Action<any>) => environment.logAllActions && !action.type.includes('@ngrx')),
+        tap((action: Action<any>) => console.log(`DucksService@logAllActions$: ${action.type}`, action)),
+    );
 
     @Effect({ dispatch: true })
     private asyncCorrelation$ = this.actions$.pipe(
@@ -43,11 +50,11 @@ export class DucksService extends DucksManager {
                         // stack: error.stack
                     }
                 }, [async]))),
-                defaultIfEmpty(factory.createCanceled([async])),
                 takeUntil(this.actions$.pipe(
                     filter(thisAction => hasCorrelationId(thisAction, async.id)),
                     filter(thisAction => isCancelType(thisAction.type)),
                 )),
+                defaultIfEmpty(factory.createCanceled([async])),
                 first(),
             );
         }),

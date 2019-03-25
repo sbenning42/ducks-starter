@@ -22,7 +22,7 @@ export class MockProductsService {
 
   private async<T>(fn: () => T) {
     return timer(2500).pipe(
-      switchMap(() => Math.random() < 0.1 ? throwError(new Error('Random')) : of(fn())),
+      switchMap(() => Math.random() < 0 ? throwError(new Error('Random')) : of(fn())),
     );
   }
 

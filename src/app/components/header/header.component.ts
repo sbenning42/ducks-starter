@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Observable } from 'rxjs';
-import { AppDuck } from 'src/app/ducks-v-2/app.duck';
-import { UserDuck } from 'src/app/ducks-v-2/user.duck';
+import { AuthStore } from 'src/z-stores/auth-z-store';
 
 @Component({
   selector: 'app-header',
@@ -10,18 +9,16 @@ import { UserDuck } from 'src/app/ducks-v-2/user.duck';
 })
 export class HeaderComponent implements OnInit {
 
-  authentified$: Observable<boolean> = this.user.store.authentified;
+  authentified$: Observable<boolean> = this.auth.zstore.authenticated;
 
   constructor(
-    public app: AppDuck,
-    public user: UserDuck
+    public auth: AuthStore
   ) { }
 
   ngOnInit() {
   }
 
   goto(target: string) {
-    this.app.actions.goto.dispatch({ target });
   }
 
 }

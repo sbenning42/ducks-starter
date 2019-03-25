@@ -6,7 +6,7 @@
  * 
  */
 
-export enum CATEGORIES {
+export enum VARIANTS {
     /**
      * 
      * Define action and correlation types here.
@@ -21,9 +21,9 @@ export enum CATEGORIES {
      * 
      */
 
-    GETALL = '@categories/get-all',
-    GETID = '@categories/get-id',
-    ADD = '@categories/add',
-    UPDATE = '@categories/update',
-    REMOVE = '@categories/REMOVE',
+    GETALL = '@variants/get-all',
+    GETID = '@variants/get-id',
+    ADD = '@variants/add',
+    UPDATE = '@variants/update',
+    REMOVE = '@variants/remove',
 }

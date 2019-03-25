@@ -20,7 +20,7 @@ import { StoreConfig } from './store-config';
 import { select, createSelector } from '@ngrx/store';
 import { Action } from './action';
 import { of } from 'rxjs';
-import { filter, switchMap, take, tap } from 'rxjs/operators';
+import { filter, switchMap, take, tap, delay } from 'rxjs/operators';
 
 export class Duck<State, Schema extends ActionsSchema, Injector extends DuckInjector> {
     
@@ -43,11 +43,13 @@ export class Duck<State, Schema extends ActionsSchema, Injector extends DuckInje
         this.store = Object.keys(storeConfig.initial).reduce((store, key) => ({
             ...store,
             [key]: injector.ducks.store.pipe(
-                select(createSelector(selectRoot, (state: State) => state ? state[key] : undefined))
+                select(createSelector(selectRoot, (state: State) => state ? state[key] : undefined)),
+                delay(0),
             )
         }), {
             _root: injector.ducks.store.pipe(
-                select(selectRoot)
+                select(selectRoot),
+                delay(0),
             ),
         }) as StoreManagerType<State>;
         injector.ducks.store.addReducer(storeConfig.selector, storeConfig.reducer);
@@ -71,7 +73,7 @@ export class Duck<State, Schema extends ActionsSchema, Injector extends DuckInje
             filter((thisAction: Action<any>) => !isRequestType(thisAction.type) && !isCancelType(thisAction.type)),
             take(1),
             switchMap((thisAction: Action<any>) => of(isResolvedType(thisAction.type) ? thisAction : undefined)),
-            tap((thisAction: Action<any>) => console.log('thisAction@resolved: ', thisAction)),
+            // tap((thisAction: Action<any>) => console.log('thisAction@resolved: ', thisAction)),
         );
     }
 
@@ -82,7 +84,7 @@ export class Duck<State, Schema extends ActionsSchema, Injector extends DuckInje
             filter((thisAction: Action<any>) => !isRequestType(thisAction.type) && !isCancelType(thisAction.type)),
             take(1),
             switchMap((thisAction: Action<any>) => of(isErroredType(thisAction.type) ? thisAction : undefined)),
-            tap((thisAction: Action<any>) => console.log('thisAction@errored: ', thisAction)),
+            // tap((thisAction: Action<any>) => console.log('thisAction@errored: ', thisAction)),
         );
     }
 
@@ -93,7 +95,7 @@ export class Duck<State, Schema extends ActionsSchema, Injector extends DuckInje
             filter((thisAction: Action<any>) => !isRequestType(thisAction.type) && !isCancelType(thisAction.type)),
             take(1),
             switchMap((thisAction: Action<any>) => of(isCanceledType(thisAction.type) ? thisAction : undefined)),
-            tap((thisAction: Action<any>) => console.log('thisAction@canceled: ', thisAction)),
+            // tap((thisAction: Action<any>) => console.log('thisAction@canceled: ', thisAction)),
         );
     }
 }

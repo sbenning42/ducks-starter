@@ -1,21 +1,32 @@
-<ng-container *ngIf="showHeader$ | async">
-  <app-header></app-header>
+<!-- HEADER -->
+<ng-container *ngIf="(showHeader$ | async)">
+  <section class="header">
+    <app-header></app-header>
+  </section>
 </ng-container>
-<ng-container *ngIf="ready$ | async">
+<!-- / HEADER -->
+
+<!-- ROUTER OUTLET -->
+<ng-container *ngIf="(ready$ | async)">
   <section class="router">
     <router-outlet></router-outlet>
   </section>
 </ng-container>
+<!-- / ROUTER OUTLET -->
 
-<ng-container *ngIf="error$ | async">
-  <section class="error">
-    <p>{{ (errorData$ | async) | json }}</p>
-  </section>
-  <button (click)="clearError()">CLEAR</button>
-</ng-container>
-
-<ng-container *ngIf="loading$ | async">
+<!-- LOADINGS -->
+<ng-container *ngIf="(loading$ | async)">
   <section class="loading">
-    <p>{{ (loadingData$ | async) | json }}</p>
+    <p>{{ loadingData$ | async | json }}</p>
   </section>
 </ng-container>
+<!-- / LOADINGS -->
+
+<!-- ERRORS -->
+<ng-container *ngIf="(error$ | async)">
+  <section class="error">
+    <p>{{ errorData$ | async | json }}</p>
+  </section>
+  <button (click)="clearError()">CLEAR ERRORS</button>
+</ng-container>
+<!-- / ERRORS -->

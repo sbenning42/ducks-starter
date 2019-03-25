@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { timer, throwError, of } from 'rxjs';
+import { timer, throwError, of, defer } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import * as uuid from 'uuid/v4';
 
@@ -34,13 +34,15 @@ export class MockUserService {
     return timer(2500).pipe(switchMap(() => of(user as MockUser)));
   }
   signin(credentials: Partial<MockUser>) {
-    const user = Object.values(this.users)
-      .find(_user => _user.user.email === credentials.email && _user.user.password === credentials.password);
-    if (!user) {
-      return timer(2500).pipe(switchMap(() => throwError(new Error('Wrong Credentials'))));
-    }
-    user.token = uuid();
-    return timer(2500).pipe(switchMap(() => of(user)));
+    return defer(() => {
+      const user = Object.values(this.users)
+        .find(_user => _user.user.email === credentials.email && _user.user.password === credentials.password);
+      if (!user) {
+        return timer(2500).pipe(switchMap(() => throwError(new Error('Wrong Credentials'))));
+      }
+      user.token = uuid();
+      return timer(2500).pipe(switchMap(() => of(user)));
+    });
   }
   signout(id: string) {
     this.users[id].token = null;

@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormControl, Validators } from '@angular/forms';
-import { UserDuck, User } from 'src/app/ducks-v-2/user.duck';
-import { AppDuck } from 'src/app/ducks-v-2/app.duck';
-import { Correlation } from 'src/ducks-v-2/classes/correlation';
+import { AuthStore } from 'src/z-stores/auth-z-store';
+import { AuthUser } from 'src/z-configs/auth-z-config';
+import { Z_SYMBOL } from 'src/z/enums';
+import { AppStore } from 'src/z-stores/app-z-store';
 
 @Component({
   selector: 'app-page-signup',
@@ -15,7 +16,10 @@ export class PageSignupComponent implements OnInit {
   emailCtrl: FormControl;
   passwordCtrl: FormControl;
 
-  constructor(public user: UserDuck, public app: AppDuck) {
+  constructor(
+    public app: AppStore,
+    public auth: AuthStore,
+  ) {
   }
 
   ngOnInit() {
@@ -35,13 +39,15 @@ export class PageSignupComponent implements OnInit {
     if (this.userForm.invalid) {
       return ;
     }
-    const user: Partial<User> = { email: this.emailCtrl.value, password: this.passwordCtrl.value };
-    const fromComponent = new Correlation('PageSigninComponent@signup');
-    const signup = this.user.actions.register.createRequest(user, [fromComponent]);
-    this.user.resolved(signup).subscribe(() => {
-      this.app.actions.goto.dispatch({ target: '/signin', data: { user } }, [fromComponent]);
+    const user: Partial<AuthUser> = { email: this.emailCtrl.value, password: this.passwordCtrl.value };
+    const fromComponent = 'PageSigninComponent@signup';
+    const register = this.auth.zstore.register.request(user, [fromComponent]);
+    this.auth.finish(register).subscribe(({ action, status }) => {
+      if (status === Z_SYMBOL.RESOLVE) {
+        this.app.zstore.goto.dispatchRequest({ target: '/signin', data: action.payload }, [fromComponent]);
+      }
     });
-    this.user.dispatch(signup);
+    this.auth.dispatch(register);
   }
 
 }

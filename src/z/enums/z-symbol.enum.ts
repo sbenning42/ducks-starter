@@ -1,0 +1,15 @@
+export enum Z_SYMBOL {
+    Z = 'z',
+    TASK = 'task',
+    REQUEST = 'request',
+    CANCEL = 'cancel',
+    RESOLVE = 'resolve',
+    ERROR = 'error',
+    TASK_CORREL = '@z-task',
+    SYNC_CORREL = '@z-task-sync',
+    SYNC_START_CORREL = '@z-task-sync-start',
+    SYNC_STOP_CORREL = '@z-task-sync-stop',
+    ASYNC_CORREL = '@z-task-async',
+    ASYNC_START_CORREL = '@z-task-async-start',
+    ASYNC_STOP_CORREL = '@z-task-async-stop',
+}

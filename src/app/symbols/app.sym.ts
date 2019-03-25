@@ -11,7 +11,7 @@ export enum APP {
     CLEAR_ERROR = '@app/clear-error',
     
     INIT_CORRELATION = '@app-initialize',
-    SET_READY_CORRELATION = '@app-initialize',
+    SET_READY_CORRELATION = '@app-set-ready',
     GOTO_CORRELATION = '@app-goto',
     START_LOADING_CORRELATION = '@app-start-loading',
     STOP_LOADING_CORRELATION = '@app-stop-loading',

@@ -1,20 +1,13 @@
 import { Injectable } from '@angular/core';
-import { ActivatedRouteSnapshot, RouterStateSnapshot, UrlTree, CanActivate } from '@angular/router';
-import { Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
-import { UserDuck } from '../ducks-v-2/user.duck';
+import { CanActivate } from '@angular/router';
+import { AuthStore } from 'src/z-stores/auth-z-store';
 
 @Injectable({
   providedIn: 'root'
 })
 export class UserGuard implements CanActivate {
-  constructor(public user: UserDuck) {}
-  canActivate(
-    route: ActivatedRouteSnapshot,
-    state: RouterStateSnapshot
-  ): boolean | UrlTree | Observable<boolean | UrlTree> | Promise<boolean | UrlTree> {
-    return this.user.store.authentified.pipe(
-      tap(canActivate => console.log('UserGuard@canActivate: ', canActivate))
-    );
+  constructor(public auth: AuthStore) {}
+  canActivate() {
+    return this.auth.zstore.authenticated;
   }
 }

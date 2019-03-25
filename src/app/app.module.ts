@@ -10,16 +10,17 @@ import { EffectsModule } from '@ngrx/effects';
 import { StoreRouterConnectingModule } from '@ngrx/router-store';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 
-import { Ducks2Module } from '../ducks-v-2/ducks.module';
-
-import { UserDuck } from './ducks-v-2/user.duck';
-import { AppDuck } from './ducks-v-2/app.duck';
-import { StorageDuck } from './ducks-v-2/storage.duck';
-
+import { environment } from 'src/environments/environment';
 import { appRoutes } from './app.routes';
 
 import { StorageService } from './services/storage/storage.service';
 import { MockUserService } from './services/mock-user/mock-user.service';
+import { MockCategoriesService } from './services/mock-categories/mock-categories.service';
+import { MockVariantsService } from './services/mock-variants/mock-variants.service';
+import { MockProductsService } from './services/mock-products/mock-products.service';
+
+import { StorageStore } from 'src/z-stores/storage-z-store';
+import { AuthStore } from 'src/z-stores/auth-z-store';
 
 import { HeaderComponent } from './components/header/header.component';
 
@@ -30,10 +31,7 @@ import { PageAboutComponent } from './pages/page-about/page-about.component';
 import { PageTutorialComponent } from './pages/page-tutorial/page-tutorial.component';
 import { PageSigninComponent } from './pages/page-signin/page-signin.component';
 import { PageSignupComponent } from './pages/page-signup/page-signup.component';
-import { UiDuck } from './ducks-v-2/ui.duck';
-import { MockCategoriesService } from './services/mock-categories/mock-categories.service';
-import { MockVariantsService } from './services/mock-variants/mock-variants.service';
-import { MockProductsService } from './services/mock-products/mock-products.service';
+import { AppStore } from 'src/z-stores/app-z-store';
 
 @NgModule({
   declarations: [
@@ -55,12 +53,12 @@ import { MockProductsService } from './services/mock-products/mock-products.serv
     RouterModule.forRoot(appRoutes),
     StoreModule.forRoot({}),
     EffectsModule.forRoot([
-      UserDuck,
-      AppDuck,
+      StorageStore,
+      AuthStore,
+      AppStore,
     ]),
-    StoreDevtoolsModule.instrument({ maxAge: 25 }),
+    StoreDevtoolsModule.instrument({ logOnly: !environment.production }),
     StoreRouterConnectingModule.forRoot(),
-    Ducks2Module
   ],
   providers: [
     StorageService,
@@ -68,10 +66,9 @@ import { MockProductsService } from './services/mock-products/mock-products.serv
     MockCategoriesService,
     MockProductsService,
     MockVariantsService,
-    StorageDuck,
-    UserDuck,
-    AppDuck,
-    UiDuck,
+    StorageStore,
+    AuthStore,
+    AppStore,
   ],
   bootstrap: [AppComponent]
 })
