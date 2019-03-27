@@ -9,12 +9,7 @@ export function baseAsyncCorrelations(
         cancel?: CorrelationUnion[];
         resolve?: CorrelationUnion[];
         error?: CorrelationUnion[];
-    } = {
-        request: [],
-        cancel: [],
-        resolve: [],
-        error: [],
-    }
+    } = {}
 ) {
     correlations = {
         request: correlations.request || [],

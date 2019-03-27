@@ -56,6 +56,8 @@ export function authConfigFactory(
     return createStoreConfig<AuthState, AuthSchema>(
         initialAuthState,
         {
+
+            // Set the credentials object
             setCreds: {
                 type: AUTH.SET_CREDS,
                 reducers: {
@@ -68,6 +70,8 @@ export function authConfigFactory(
                     resolve: [AUTH.SAVE_CREDS_CORREL]
                 }
             },
+
+            // Delete the credentials object
             delCreds: {
                 type: AUTH.DEL_CREDS,
                 reducers: {
@@ -80,6 +84,8 @@ export function authConfigFactory(
                     resolve: [AUTH.REMOVE_CREDS_CORREL]
                 }
             },
+
+            // Register a new user
             register: {
                 type: AUTH.REGISTER,
                 async: true,
@@ -95,6 +101,8 @@ export function authConfigFactory(
                     'Cannot Register User ...'
                 ),
             },
+
+            // Authenticate an user
             authenticate: {
                 type: AUTH.AUTHENTICATE,
                 async: true,
@@ -122,6 +130,8 @@ export function authConfigFactory(
                     }
                 ),
             },
+
+            // Revoke an authenticated user
             revoke: {
                 type: AUTH.REVOKE,
                 async: true,

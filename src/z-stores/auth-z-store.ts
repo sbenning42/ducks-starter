@@ -18,6 +18,8 @@ export class AuthStore extends ZStore<AuthState, AuthSchema> {
     ) {
         super(store, actions$, authSelector, authConfigFactory(auth));
     }
+
+    // Set the credentials object after a success authentication (if AUTH.SET_CREDS_CORREL is used)
     @Effect({ dispatch: true })
     protected setCredentials$ = this.actions$.pipe(
         ofType(asResolveType(AUTH.AUTHENTICATE)),
@@ -29,6 +31,9 @@ export class AuthStore extends ZStore<AuthState, AuthSchema> {
             ]
         )),
     );
+
+    // Delete the credentials object after a failure authentication (if AUTH.DEL_CREDS_CORREL is used)
+    // Delete the credentials object a succes revoking (if AUTH.DEL_CREDS_CORREL is used)
     @Effect({ dispatch: true })
     protected delCredentials$ = this.actions$.pipe(
         ofType(asErrorType(AUTH.AUTHENTICATE), asResolveType(AUTH.REVOKE)),
@@ -40,6 +45,8 @@ export class AuthStore extends ZStore<AuthState, AuthSchema> {
             ]
         )),
     );
+
+    // Save the credentials object to local storage if AUTH.SET_CREDS uses AUTH.SAVE_CREDS_CORREL
     @Effect({ dispatch: true })
     protected saveCredentials$ = this.actions$.pipe(
         ofType(asRequestResolveType(AUTH.SET_CREDS)),
@@ -48,6 +55,8 @@ export class AuthStore extends ZStore<AuthState, AuthSchema> {
             { credentials: action.payload }, [grabCorrelationType(action, AUTH.SAVE_CREDS_CORREL)]
         )),
     );
+
+    // Remove the credentials object from local storage if AUTH.DEL_CREDS uses AUTH.REMOVE_CREDS_CORREL
     @Effect({ dispatch: true })
     protected removeCredentials$ = this.actions$.pipe(
         ofType(asRequestResolveType(AUTH.DEL_CREDS)),

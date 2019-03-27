@@ -25,6 +25,17 @@ export class AppStore extends ZStore<AppState, AppSchema> {
         super(store, actions$, appSelector, appConfigFactory());
     }
 
+    /**
+     * On APP.INITIALIZE_START:
+     *  - load local storage
+     *      - on failure APP.GOTO /tutorial + APP.INITIALIZE_FAILURE
+     *      - on success
+     *          - if firstVisit !== false => APP.GOTO /tutorial + APP.INITIALIZE_SUCCESS
+     *          - elif !credentials => APP.GOTO /signin + APP.INITIALIZE_SUCCESS
+     *          - else AUTH.AUTHENTICATE
+     *              - on failure APP.GOTO /signin + APP.INITIALIZE_SUCCESS
+     *              - on success APP.GOTO /home + APP.INITIALIZE_SUCCESS
+     */
     @Effect({ dispatch: true })
     protected initialize$ = this.actions$.pipe(
         ofType(asRequestResolveType(APP.INITIALIZE_START)),
@@ -64,7 +75,7 @@ export class AppStore extends ZStore<AppState, AppSchema> {
                     case Z_SYMBOL.ERROR:
                     case Z_SYMBOL.CANCEL:
                     default:
-                        return of(failure);
+                        return from([_goto('/tutorial'), failure]);
                 }
             };
             const switchGetStorage$ = getStorageRes$.pipe(switchMap(switchGetStorageResFn));
@@ -72,6 +83,7 @@ export class AppStore extends ZStore<AppState, AppSchema> {
         }),
     );
 
+    // On APP.GOTO use Router
     @Effect({ dispatch: false })
     protected goto$ = this.actions$.pipe(
         ofType(asRequestResolveType(APP.GOTO)),
@@ -83,6 +95,7 @@ export class AppStore extends ZStore<AppState, AppSchema> {
         }),
     );
 
+    // Log load start actions
     @Effect({ dispatch: false })
     protected loadStart$ = this.actions$.pipe(
         ofType(asRequestResolveType(APP.LOAD_START)),
@@ -90,6 +103,8 @@ export class AppStore extends ZStore<AppState, AppSchema> {
             console.log('AppStore@Effect.loadStart$: Load Start: ', action.payload);
         }),
     );
+
+    // Log load stop actions
     @Effect({ dispatch: false })
     protected loadStop$ = this.actions$.pipe(
         ofType(asRequestResolveType(APP.LOAD_STOP)),
@@ -97,6 +112,8 @@ export class AppStore extends ZStore<AppState, AppSchema> {
             console.log('AppStore@Effect.loadStop$: Load Stop.');            
         }),
     );
+
+    // Log load clear actions
     @Effect({ dispatch: false })
     protected loadClear$ = this.actions$.pipe(
         ofType(asRequestResolveType(APP.LOAD_CLEAR)),
@@ -105,6 +122,7 @@ export class AppStore extends ZStore<AppState, AppSchema> {
         }),
     );
     
+    // Log error start actions
     @Effect({ dispatch: false })
     protected errorStart$ = this.actions$.pipe(
         ofType(asRequestResolveType(APP.ERROR_START)),
@@ -112,6 +130,8 @@ export class AppStore extends ZStore<AppState, AppSchema> {
             console.log('AppStore@Effect.errorStart$: Error Start: ', action.payload);
         }),
     );
+
+    // Log error stop actions
     @Effect({ dispatch: false })
     protected errorStop$ = this.actions$.pipe(
         ofType(asRequestResolveType(APP.ERROR_STOP)),
@@ -119,6 +139,8 @@ export class AppStore extends ZStore<AppState, AppSchema> {
             console.log('AppStore@Effect.errorStop$: Error Stop.');            
         }),
     );
+
+    // Log error clear actions
     @Effect({ dispatch: false })
     protected errorClear$ = this.actions$.pipe(
         ofType(asRequestResolveType(APP.ERROR_CLEAR)),
@@ -127,6 +149,7 @@ export class AppStore extends ZStore<AppState, AppSchema> {
         }),
     );
 
+    // If APP.GOTO_CORREL is use, dispatch an APP.GOTO
     @Effect({ dispatch: true })
     protected gotoCorrelation$ = this.actions$.pipe(
         hasCorrelationType(APP.GOTO_CORREL),
@@ -136,6 +159,7 @@ export class AppStore extends ZStore<AppState, AppSchema> {
         map(correlation => this.zstore.goto.request(correlation.data, [correlation]))
     );
 
+    // If APP.LOAD_START_CORREL is use, dispatch an APP.LOAD_START
     @Effect({ dispatch: true })
     protected loadStartCorrelation$ = this.actions$.pipe(
         hasCorrelationType(APP.LOAD_START_CORREL),
@@ -144,6 +168,8 @@ export class AppStore extends ZStore<AppState, AppSchema> {
         filter(correlation => !!correlation),
         map(correlation => this.zstore.loadStart.request(correlation.data, [correlation]))
     );
+
+    // If APP.LOAD_STOP_CORREL is use, dispatch an APP.LOAD_STOP
     @Effect({ dispatch: true })
     protected loadStopCorrelation$ = this.actions$.pipe(
         hasCorrelationType(APP.LOAD_STOP_CORREL),
@@ -152,6 +178,8 @@ export class AppStore extends ZStore<AppState, AppSchema> {
         filter(correlation => !!correlation),
         map(correlation => this.zstore.loadStop.request(undefined, [correlation]))
     );
+    
+    // If APP.LOAD_CLEAR_CORREL is use, dispatch an APP.LOAD_CLEAR
     @Effect({ dispatch: true })
     protected loadClearCorrelation$ = this.actions$.pipe(
         hasCorrelationType(APP.LOAD_CLEAR_CORREL),
@@ -161,6 +189,7 @@ export class AppStore extends ZStore<AppState, AppSchema> {
         map(correlation => this.zstore.loadClear.request(undefined, [correlation]))
     );
 
+    // If APP.ERROR_START_CORREL is use, dispatch an APP.ERROR_START
     @Effect({ dispatch: true })
     protected errorStartCorrelation$ = this.actions$.pipe(
         hasCorrelationType(APP.ERROR_START_CORREL),
@@ -169,6 +198,8 @@ export class AppStore extends ZStore<AppState, AppSchema> {
         filter(correlation => !!correlation),
         map(correlation => this.zstore.errorStart.request(correlation.data, [correlation]))
     );
+
+    // If APP.ERROR_STOP_CORREL is use, dispatch an APP.ERROR_STOP
     @Effect({ dispatch: true })
     protected errorStopCorrelation$ = this.actions$.pipe(
         hasCorrelationType(APP.ERROR_STOP_CORREL),
@@ -177,6 +208,8 @@ export class AppStore extends ZStore<AppState, AppSchema> {
         filter(correlation => !!correlation),
         map(correlation => this.zstore.errorStop.request(undefined, [correlation]))
     );
+
+    // If APP.ERROR_CLEAR_CORREL is use, dispatch an APP.ERROR_CLEAR
     @Effect({ dispatch: true })
     protected errorClearCorrelation$ = this.actions$.pipe(
         hasCorrelationType(APP.ERROR_CLEAR_CORREL),

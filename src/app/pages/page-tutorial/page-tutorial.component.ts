@@ -14,16 +14,13 @@ export class PageTutorialComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    const fromComponent = new Correlation('PageTutorialComponent@ngOnInit');
   }
 
   ngOnDestroy() {
-    const fromComponent = new Correlation('PageTutorialComponent@ngOnDestroy');
   }
 
   finishTutorial() {
-    const fromComponent = new Correlation('PageTutorialComponent@finishTutorial');
-    this.storage.zstore.save.dispatchRequest({ firstVisit: false }, [fromComponent]);
+    this.storage.zstore.save.dispatchRequest({ firstVisit: false }, ['PageTutorialComponent@ngOnInit']);
   }
 
 }

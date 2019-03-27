@@ -40,11 +40,11 @@ export class PageSignupComponent implements OnInit {
       return ;
     }
     const user: Partial<AuthUser> = { email: this.emailCtrl.value, password: this.passwordCtrl.value };
-    const fromComponent = 'PageSigninComponent@signup';
-    const register = this.auth.zstore.register.request(user, [fromComponent]);
+    const register = this.auth.zstore.register.request(user, ['PageSigninComponent@signup']);
     this.auth.finish(register).subscribe(({ action, status }) => {
       if (status === Z_SYMBOL.RESOLVE) {
-        this.app.zstore.goto.dispatchRequest({ target: '/signin', data: action.payload }, [fromComponent]);
+        const data = { user: action.payload };
+        this.app.zstore.goto.dispatchRequest({ target: '/signin', data }, ['PageSigninComponent@signup']);
       }
     });
     this.auth.dispatch(register);

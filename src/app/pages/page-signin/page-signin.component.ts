@@ -43,11 +43,11 @@ export class PageSigninComponent implements OnInit {
       email: this.emailCtrl.value,
       password: this.passwordCtrl.value,
     };
-    const fromComponent = 'PageSigninComponent@signin';
-    const authenticate = this.auth.zstore.authenticate.request(credentials, [fromComponent]);
+    const authenticate = this.auth.zstore.authenticate.request(credentials, ['PageSigninComponent@signin']);
     this.auth.finish(authenticate).subscribe(({ action, status }) => {
       if (status === Z_SYMBOL.RESOLVE) {
-        this.app.zstore.goto.dispatchRequest({ target: '/home', data: action.payload }, [fromComponent]);
+        const data = { credentials, user: action.payload };
+        this.app.zstore.goto.dispatchRequest({ target: '/home', data }, ['PageSigninComponent@signin']);
       }
     });
     this.auth.dispatch(authenticate);

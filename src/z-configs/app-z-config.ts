@@ -76,9 +76,10 @@ export function appConfigFactory() {
     return createStoreConfig<AppState, AppSchema>(
         initialAppState,
         {
-            goto: {
-                type: APP.GOTO
-            },
+            // Navigate with Router
+            goto: { type: APP.GOTO },
+    
+            // Request the App to Initialize
             initializeStart: {
                 type: APP.INITIALIZE_START,
                 correlations: {
@@ -88,28 +89,26 @@ export function appConfigFactory() {
                     ]
                 }
             },
+
+            // App was initialized successfully
             initializeSuccess: {
                 type: APP.INITIALIZE_SUCCESS,
                 reducers: {
                     request: (state) => ({ ...state, initialized: true }),
                 },
-                correlations: {
-                    request: [
-                        APP.LOAD_STOP_CORREL
-                    ],
-                }
+                correlations: { request: [APP.LOAD_STOP_CORREL] }
             },
+
+            // There was an error during the App Initialization
             initializeFailure: {
                 type: APP.INITIALIZE_FAILURE,
                 reducers: {
                     request: (state) => ({ ...state, initialized: false }),
                 },
-                correlations: {
-                    request: [
-                        APP.LOAD_STOP_CORREL
-                    ],
-                }
+                correlations: { request: [APP.LOAD_STOP_CORREL] }
             },
+
+            // Start a loader
             loadStart: {
                 type: APP.LOAD_START,
                 reducers: {
@@ -121,6 +120,8 @@ export function appConfigFactory() {
                     })
                 }
             },
+
+            // Stop a loader
             loadStop: {
                 type: APP.LOAD_STOP,
                 reducers: {
@@ -132,6 +133,8 @@ export function appConfigFactory() {
                     })
                 }
             },
+
+            // Clear all pending loaders
             loadClear: {
                 type: APP.LOAD_CLEAR,
                 reducers: {
@@ -143,6 +146,8 @@ export function appConfigFactory() {
                     })
                 }
             },
+
+            // Start an error
             errorStart: {
                 type: APP.ERROR_START,
                 reducers: {
@@ -154,6 +159,8 @@ export function appConfigFactory() {
                     })
                 }
             },
+
+            // Stop an error
             errorStop: {
                 type: APP.ERROR_STOP,
                 reducers: {
@@ -165,6 +172,8 @@ export function appConfigFactory() {
                     })
                 }
             },
+
+            // Clear all pending errors
             errorClear: {
                 type: APP.ERROR_CLEAR,
                 reducers: {

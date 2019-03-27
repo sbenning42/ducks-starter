@@ -31,8 +31,7 @@ export class AppComponent implements OnInit {
   }
 
   initialize() {
-    const fromComponent = 'AppComponent@initialize';
-    this.app.zstore.initializeStart.dispatchRequest(undefined, [fromComponent]);
+    this.app.zstore.initializeStart.dispatchRequest(undefined, ['AppComponent@initialize']);
   }
 
   clearError() {}

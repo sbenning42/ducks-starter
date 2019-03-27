@@ -39,6 +39,8 @@ export function storageConfigFactory(
     return createStoreConfig<StorageState, StorageSchema>(
         initialStorageState,
         {
+
+            // Load local storage
             get: {
                 type: STORAGE.GET,
                 async: true,
@@ -50,29 +52,21 @@ export function storageConfigFactory(
                         entries: payload,
                     }),
                 },
-                correlations: baseAsyncCorrelations(
-                    'Get Storage ...',
-                    'Cannot Get Storage ...'
-                ),
+                correlations: baseAsyncCorrelations('Get Storage ...', 'Cannot Get Storage ...'),
             },
+
+            // Save entries to local storage
             save: {
                 type: STORAGE.SAVE,
                 async: true,
                 handler: payload => storage.save(payload),
                 reducers: {
-                    resolve: (state, payload) => ({
-                        ...state,
-                        entries: {
-                            ...state.entries,
-                            ...payload,
-                        },
-                    }),
+                    resolve: (state, payload) => ({ ...state, entries: { ...state.entries, ...payload } }),
                 },
-                correlations: baseAsyncCorrelations(
-                    'Save Storage ...',
-                    'Cannot Save Storage ...'
-                ),
+                correlations: baseAsyncCorrelations('Save Storage ...', 'Cannot Save Storage ...'),
             },
+
+            // Remove entries from local storage
             remove: {
                 type: STORAGE.REMOVE,
                 async: true,
@@ -85,25 +79,18 @@ export function storageConfigFactory(
                             .reduce((entries, key) => ({ ...entries, [key]: state[key] }), {}),
                     }),
                 },
-                correlations: baseAsyncCorrelations(
-                    'Remove Storage ...',
-                    'Cannot Remove Storage ...'
-                ),
+                correlations: baseAsyncCorrelations('Remove Storage ...', 'Cannot Remove Storage ...'),
             },
+
+            // Clear local storage
             clear: {
                 type: STORAGE.CLEAR,
                 async: true,
                 handler: () => storage.clear(),
                 reducers: {
-                    resolve: (state, payload) => ({
-                        ...state,
-                        entries: payload,
-                    }),
+                    resolve: (state, payload) => ({ ...state, entries: payload}),
                 },
-                correlations: baseAsyncCorrelations(
-                    'Clear Storage ...',
-                    'Cannot Clear Storage ...'
-                ),
+                correlations: baseAsyncCorrelations('Clear Storage ...', 'Cannot Clear Storage ...'),
             },
         }
     );
