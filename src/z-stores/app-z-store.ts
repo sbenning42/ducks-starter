@@ -83,6 +83,11 @@ export class AppStore extends ZStore<AppState, AppSchema> {
         }),
     );
 
+    @Effect({ dispatch: true })
+    protected init$ = this.actions$.pipe(
+        ofTypeWithCorrelation
+    );
+
     // On APP.GOTO use Router
     @Effect({ dispatch: false })
     protected goto$ = this.actions$.pipe(

@@ -2,6 +2,7 @@ import { Z_SYMBOL } from "../enums/z-symbol.enum";
 import { Action } from "../classes/action.class";
 import { Observable } from "rxjs";
 import { filter } from "rxjs/operators";
+import { ofType } from '@ngrx/store';
 
 export const asRequestType = (type: string) => `${type}/${Z_SYMBOL.Z}/${Z_SYMBOL.TASK}/${Z_SYMBOL.REQUEST}`;
 export const asCancelType = (type: string) => `${type}/${Z_SYMBOL.Z}/${Z_SYMBOL.TASK}/${Z_SYMBOL.CANCEL}`;
@@ -35,5 +36,19 @@ export function hasCorrelationType(type: string) {
         filter((action: Action) => !!action.correlations
             && action.correlations.some(correlation => correlation.type === type)
         )
+    );
+}
+
+export function getTypeWithCorrelationId(type: string, correlationId: string) {
+    return (actions$: Observable<Action>) => actions$.pipe(
+        ofType(type),
+        hasCorrelationId(correlationId),
+    );
+}
+
+export function getTypeWithCorrelationType(type: string, correlationType: string) {
+    return (actions$: Observable<Action>) => actions$.pipe(
+        ofType(type),
+        hasCorrelationType(correlationType),
     );
 }
