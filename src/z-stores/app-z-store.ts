@@ -4,12 +4,17 @@ import { Actions, Effect, ofType } from "@ngrx/effects";
 import { AppState, AppSchema, appSelector, appConfigFactory, APP, AppLoadData, AppErrorData } from "src/z-configs/app-z-config";
 import { tap, map, filter, mergeMap, switchMap } from "rxjs/operators";
 import { StorageStore } from "./storage-z-store";
-import { ZStore, Action } from "src/z/classes";
-import { asRequestType, hasCorrelationType, grabCorrelationType, asRequestResolveType } from "src/z/functions";
+import {
+    ZStore,
+    Action,
+    hasCorrelationType,
+    grabCorrelationType,
+    asRequestResolveType,
+    RESOLVE
+} from "src/z";
 import { Router } from "@angular/router";
 import { concat, of, EMPTY, from } from "rxjs";
 import { Entries } from "src/z-configs/storage-z-config";
-import { Z_SYMBOL, RESOLVE } from "src/z/enums";
 import { AuthStore } from "./auth-z-store";
 import { AuthUser, AuthCreds } from "src/z-configs/auth-z-config";
 
@@ -45,7 +50,7 @@ export class AppStore extends ZStore<AppState, AppSchema> {
              */
             const init = grabCorrelationType(initialize, APP.INITIALIZE_CORREL);
             /**
-             * Prepare all possible synchronous actions
+             * Prepare all possible synchronous actions to clean following code (not optimized but clearer)
              */
             const gotoTutorial = this.zstore.goto.request('/tutorial', [init]);
             const gotoSignin = this.zstore.goto.request('/signin', [init]);
@@ -54,37 +59,51 @@ export class AppStore extends ZStore<AppState, AppSchema> {
             const success = this.zstore.initializeSuccess.request(undefined, [init]);
             const failure = this.zstore.initializeFailure.request(undefined, [init]);
             /**
-             * Prepare first asynchronous request/response action
+             * Prepare first asynchronous request/response action (STORAGE.GET)
              */
             const getStorageReq = this.storage.zstore.get.request(undefined, [init]);
             const getStorageRes$ = this.finish(getStorageReq);
             /**
-             * Prepare first followup
+             * Prepare first followup.
+             * It handle first asynchronous request/response (STORAGE.GET) success/failure
              */
-            const switchGetStorageResFn = ({ status, action }: { status: string, action: Action<Entries<any>> }) => {
+            const switchGetStorageResFollowUp = ({ status, action }: { status: string, action: Action<Entries<any>> }) => {
+                if (status !== RESOLVE) {
+                    /**
+                     * Terminate Initialization / Failure
+                     */
+                    return from([gotoTutorial, failure]);
+                } else if (!action.payload.credentials) {
+                    /**
+                     * Terminate Initialization / Success
+                     */
+                    return from([action.payload.firstVisit === false ? gotoSignup : gotoSignin, success]);
+                }
                 /**
-                 * Prepare second asynchronous request/response action
+                 * Prepare second asynchronous request/response action (AUTH.AUTHENTICATE)
                  */
                 const authenticateReq = this.auth.zstore.authenticate.request(action.payload.credentials, [init]);
                 const authenticateRes$ = this.finish(authenticateReq);
                 /**
-                 * Prepare second followup
+                 * Prepare second followup.
+                 * It handle second asynchronous request/response (AUTH.AUTHENTICATE) success/failure
                  */
-                const switchAuthenticateResFn = ({ status }) => from([status === RESOLVE ? gotoHome : gotoSignin, success]);
-                if (status !== RESOLVE) {
-                    return from([gotoTutorial, failure]);
-                } else if (!action.payload.credentials) {
-                    return from([action.payload.firstVisit === false ? gotoSignup : gotoSignin, success]);
-                }
+                const switchAuthenticateResFollowUp = ({ status }) => {
+                    /**
+                     * Terminate Initialization / Success
+                     */
+                    const target = status === RESOLVE ? gotoHome : gotoSignin;
+                    return from([target, success])
+                };
                 /**
-                 * Dispatch second asynchronous request/response action + second followup
+                 * Dispatch second asynchronous request/response action and serialize the second followup
                  */
-                return concat(of(authenticateReq), authenticateRes$.pipe(switchMap(switchAuthenticateResFn)));
+                return concat(of(authenticateReq), authenticateRes$.pipe(switchMap(switchAuthenticateResFollowUp)));
             };
             /**
-             * Dispatch first asynchronous request/response action + first followup
+             * Dispatch first asynchronous request/response action and serialize the first followup
              */
-            return concat(of(getStorageReq), getStorageRes$.pipe(switchMap(switchGetStorageResFn)));
+            return concat(of(getStorageReq), getStorageRes$.pipe(switchMap(switchGetStorageResFollowUp)));
         }),
     );
 
@@ -154,17 +173,16 @@ export class AppStore extends ZStore<AppState, AppSchema> {
         }),
     );
 
-    // If APP.GOTO_CORREL is use, dispatch an APP.GOTO
+    // If APP.GOTO_CORREL is use, dispatch an APP.GOTO action
     @Effect({ dispatch: true })
     protected gotoCorrelation$ = this.actions$.pipe(
         hasCorrelationType(APP.GOTO_CORREL),
         filter((action: Action) => !action.type.includes(APP.GOTO)),
         map(action => grabCorrelationType(action, APP.GOTO_CORREL)),
-        filter(correlation => !!correlation && !!correlation.data),
-        map(correlation => this.zstore.goto.request(correlation.data, [correlation]))
+        map(correlation => this.zstore.goto.request(correlation ? correlation.data : '/', [correlation]))
     );
 
-    // If APP.LOAD_START_CORREL is use, dispatch an APP.LOAD_START
+    // If APP.LOAD_START_CORREL is use, dispatch an APP.LOAD_START action
     @Effect({ dispatch: true })
     protected loadStartCorrelation$ = this.actions$.pipe(
         hasCorrelationType(APP.LOAD_START_CORREL),
@@ -173,7 +191,7 @@ export class AppStore extends ZStore<AppState, AppSchema> {
         map(correlation => this.zstore.loadStart.request(correlation.data, [correlation]))
     );
 
-    // If APP.LOAD_STOP_CORREL is use, dispatch an APP.LOAD_STOP
+    // If APP.LOAD_STOP_CORREL is use, dispatch an APP.LOAD_STOP action
     @Effect({ dispatch: true })
     protected loadStopCorrelation$ = this.actions$.pipe(
         hasCorrelationType(APP.LOAD_STOP_CORREL),
@@ -182,7 +200,7 @@ export class AppStore extends ZStore<AppState, AppSchema> {
         map(correlation => this.zstore.loadStop.request(undefined, [correlation]))
     );
     
-    // If APP.LOAD_CLEAR_CORREL is use, dispatch an APP.LOAD_CLEAR
+    // If APP.LOAD_CLEAR_CORREL is use, dispatch an APP.LOAD_CLEAR action
     @Effect({ dispatch: true })
     protected loadClearCorrelation$ = this.actions$.pipe(
         hasCorrelationType(APP.LOAD_CLEAR_CORREL),
@@ -191,7 +209,7 @@ export class AppStore extends ZStore<AppState, AppSchema> {
         map(correlation => this.zstore.loadClear.request(undefined, [correlation]))
     );
 
-    // If APP.ERROR_START_CORREL is use, dispatch an APP.ERROR_START
+    // If APP.ERROR_START_CORREL is use, dispatch an APP.ERROR_START action
     @Effect({ dispatch: true })
     protected errorStartCorrelation$ = this.actions$.pipe(
         hasCorrelationType(APP.ERROR_START_CORREL),
@@ -200,7 +218,7 @@ export class AppStore extends ZStore<AppState, AppSchema> {
         map(correlation => this.zstore.errorStart.request(correlation.data, [correlation]))
     );
 
-    // If APP.ERROR_STOP_CORREL is use, dispatch an APP.ERROR_STOP
+    // If APP.ERROR_STOP_CORREL is use, dispatch an APP.ERROR_STOP action
     @Effect({ dispatch: true })
     protected errorStopCorrelation$ = this.actions$.pipe(
         hasCorrelationType(APP.ERROR_STOP_CORREL),
@@ -209,7 +227,7 @@ export class AppStore extends ZStore<AppState, AppSchema> {
         map(correlation => this.zstore.errorStop.request(undefined, [correlation]))
     );
 
-    // If APP.ERROR_CLEAR_CORREL is use, dispatch an APP.ERROR_CLEAR
+    // If APP.ERROR_CLEAR_CORREL is use, dispatch an APP.ERROR_CLEAR action
     @Effect({ dispatch: true })
     protected errorClearCorrelation$ = this.actions$.pipe(
         hasCorrelationType(APP.ERROR_CLEAR_CORREL),

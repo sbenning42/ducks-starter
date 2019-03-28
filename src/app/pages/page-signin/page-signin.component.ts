@@ -2,8 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormControl, Validators } from '@angular/forms';
 import { AuthStore } from 'src/z-stores/auth-z-store';
 import { AuthCreds } from 'src/z-configs/auth-z-config';
-import { Z_SYMBOL } from 'src/z/enums';
 import { AppStore } from 'src/z-stores/app-z-store';
+import { RESOLVE } from 'src/z';
 
 @Component({
   selector: 'app-page-signin',
@@ -45,7 +45,7 @@ export class PageSigninComponent implements OnInit {
     };
     const authenticate = this.auth.zstore.authenticate.request(credentials, ['PageSigninComponent@signin']);
     this.auth.finish(authenticate).subscribe(({ action, status }) => {
-      if (status === Z_SYMBOL.RESOLVE) {
+      if (status === RESOLVE) {
         const data = { credentials, user: action.payload };
         this.app.zstore.goto.dispatchRequest({ target: '/home', data }, ['PageSigninComponent@signin']);
       }

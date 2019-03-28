@@ -1,6 +1,8 @@
 import { StorageService } from "src/app/services/storage/storage.service";
-import { BaseSchema } from "src/z/types";
-import { createStoreConfig } from "src/z/functions";
+import {
+    BaseSchema,
+    createStoreConfig,
+} from "src/z";
 import { baseAsyncCorrelations } from "./base-async-correlations";
 
 export const storageSelector = 'STORAGE';

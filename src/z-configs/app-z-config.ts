@@ -1,16 +1,25 @@
-import { BaseSchema } from "src/z/types";
-import { createStoreConfig } from "src/z/functions";
-import { StorageStore } from "src/z-stores/storage-z-store";
-import { AuthStore } from "src/z-stores/auth-z-store";
+import {
+    BaseSchema,
+    createStoreConfig,
+} from "src/z";
 
+/**
+ * Property name of this state in the root store (aka: @ngrx/store)
+ */
 export const appSelector = 'APP';
 
+/**
+ * Interface used to describe a loader
+ */
 export interface AppLoadData<Data = any> {
     message: string;
     name?: string;
     data?: Data;
 }
 
+/**
+ * Interface used to describe an error
+ */
 export interface AppErrorData<Data = any> {
     message: string;
     name?: string;
@@ -18,6 +27,9 @@ export interface AppErrorData<Data = any> {
     data?: Data;    
 }
 
+/**
+ * The app state
+ */
 export interface AppState {
     initialized: boolean;
     load: boolean;
@@ -28,6 +40,9 @@ export interface AppState {
     errorData: AppErrorData[];
 }
 
+/**
+ * The initial value of the app state
+ */
 export const initialAppState: AppState = {
     initialized: false,
     load: false,
@@ -38,27 +53,97 @@ export const initialAppState: AppState = {
     errorData: [],
 };
 
+/**
+ * All app's action types
+ * 
+ * IMPORTANT use this enum EVERYWHERE
+ * NEVER use the actual string constants
+ * Even thougth, you migth typescript type's it as a string,
+ * Anyway, always use APP.____ to reference the ACTUAL VALUE
+ */
 export enum APP {
+    /**
+     * Use router to navigate to target
+     */
     GOTO = '@APP/goto',
+    /**
+     * Start app initialization
+     */
     INITIALIZE_START = '@APP/initialize/start',
+    /**
+     * App initialization was successfull
+     */
     INITIALIZE_SUCCESS = '@APP/initialize/success',
+    /**
+     * App initialization has failed
+     */
     INITIALIZE_FAILURE = '@APP/initialize/failure',
+    /**
+     * Start a loader
+     */
     LOAD_START = '@APP/load/start',
+    /**
+     * Stop a loader
+     */
     LOAD_STOP = '@APP/load/stop',
+    /**
+     * Clear all loaders
+     */
     LOAD_CLEAR = '@APP/load/clear',
+    /**
+     * Start an error
+     */
     ERROR_START = '@APP/error/start',
+    /**
+     * Stop an error
+     */
     ERROR_STOP = '@APP/error/stop',
+    /**
+     * Clear all errors
+     */
     ERROR_CLEAR = '@APP/error/clear',
+    /**
+     * Correlation use to identify all actions involved in the app initialization
+     */
     INITIALIZE_CORREL = '@APP-initialize',
+    /**
+     * Correlation use to dispatch an APP.GOTO action
+     */
     GOTO_CORREL = '@APP-goto',
+    /**
+     * Correlation use to dispatch an APP.LOAD_START action
+     */
     LOAD_START_CORREL = '@APP-load-start',
+    /**
+     * Correlation use to dispatch an APP.LOAD_STOP action
+     */
     LOAD_STOP_CORREL = '@APP-load-stop',
+    /**
+     * Correlation use to dispatch an APP.LOAD_CLEAR action
+     */
     LOAD_CLEAR_CORREL = '@APP-load-clear',
+    /**
+     * Correlation use to dispatch an APP.ERROR_START action
+     */
     ERROR_START_CORREL = '@APP-error-start',
+    /**
+     * Correlation use to dispatch an APP.ERROR_STOP action
+     */
     ERROR_STOP_CORREL = '@APP-error-stop',
+    /**
+     * Correlation use to dispatch an APP.ERROR_CLEAR action
+     */
     ERROR_CLEAR_CORREL = '@APP-error-clear',
 }
 
+/**
+ * Interface used to describe all app's action payload and result types and the sync/async state of the action
+ * 
+ * A sync action should extends [undefined | any, void, false]
+ * 
+ * An async action should extends [undefined | any, undefined | any, true]
+ * 
+ */
 export interface AppSchema extends BaseSchema {
     goto: [string | { target: string, data?: any }, void, false],
     initializeStart: [undefined, void, false],
@@ -72,6 +157,9 @@ export interface AppSchema extends BaseSchema {
     errorClear: [undefined, void, false],
 }
 
+/**
+ * Function used to instanciate the app's store configuration 
+ */
 export function appConfigFactory() {
     return createStoreConfig<AppState, AppSchema>(
         initialAppState,

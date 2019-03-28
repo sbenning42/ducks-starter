@@ -1,5 +1,5 @@
 import { APP } from "./app-z-config";
-import { CorrelationUnion } from "src/z/types";
+import { CorrelationUnion } from "src/z";
 
 export function baseAsyncCorrelations(
     loadMessage: string = '',

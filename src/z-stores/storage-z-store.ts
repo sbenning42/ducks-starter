@@ -1,9 +1,9 @@
 import { Injectable } from "@angular/core";
 import { Store } from "@ngrx/store";
-import { Actions, Effect } from "@ngrx/effects";
+import { Actions } from "@ngrx/effects";
 import { StorageService } from "src/app/services/storage/storage.service";
 import { StorageState, StorageSchema, storageSelector, storageConfigFactory } from "src/z-configs/storage-z-config";
-import { ZStore, Action } from "src/z/classes";
+import { ZStore, Action } from "src/z";
 
 @Injectable()
 export class StorageStore extends ZStore<StorageState, StorageSchema> {

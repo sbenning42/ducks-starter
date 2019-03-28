@@ -5,8 +5,15 @@ import { AuthState, AuthSchema, authSelector, authConfigFactory, AUTH, AuthCreds
 import { MockUserService } from "src/app/services/mock-user/mock-user.service";
 import { map } from "rxjs/operators";
 import { StorageStore } from "./storage-z-store";
-import { ZStore, Action } from "src/z/classes";
-import { asResolveType, hasCorrelationType, grabCorrelationType, asErrorType, asRequestType, asRequestResolveType } from "src/z/functions";
+import {
+    ZStore,
+    Action,
+    asResolveType,
+    hasCorrelationType,
+    grabCorrelationType,
+    asErrorType,
+    asRequestResolveType
+} from "src/z";
 
 @Injectable()
 export class AuthStore extends ZStore<AuthState, AuthSchema> {

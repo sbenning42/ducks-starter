@@ -1,7 +1,9 @@
 import { MockUserService } from "src/app/services/mock-user/mock-user.service";
 import { map } from "rxjs/operators";
-import { BaseSchema } from "src/z/types";
-import { createStoreConfig } from "src/z/functions";
+import {
+    BaseSchema,
+    createStoreConfig,
+} from "src/z";
 import { baseAsyncCorrelations } from "./base-async-correlations";
 
 export const authSelector = 'AUTH';
@@ -106,7 +108,9 @@ export function authConfigFactory(
             authenticate: {
                 type: AUTH.AUTHENTICATE,
                 async: true,
-                handler: payload => auth.signin(payload).pipe(map(resp => ({ ...resp, credentials: payload }))),
+                handler: payload => auth.signin(payload).pipe(
+                    map(resp => ({ ...resp, credentials: payload }))
+                ),
                 reducers: {
                     resolve: (state, payload) => ({
                         ...state,

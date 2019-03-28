@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { EntityState, createEntityAdapter, Update } from '@ngrx/entity';
 import { timer, throwError, of } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
-import { uuid } from 'src/ducks-v-2/tools/uuid';
+import { uuid } from 'src/z';
 
 export interface MockVariant {
   id: string;
