@@ -13,10 +13,9 @@ import {
     RESOLVE
 } from "src/z";
 import { Router } from "@angular/router";
-import { concat, of, EMPTY, from } from "rxjs";
+import { concat, of, from } from "rxjs";
 import { Entries } from "src/z-configs/storage-z-config";
 import { AuthStore } from "./auth-z-store";
-import { AuthUser, AuthCreds } from "src/z-configs/auth-z-config";
 
 @Injectable()
 export class AppStore extends ZStore<AppState, AppSchema> {
@@ -77,7 +76,7 @@ export class AppStore extends ZStore<AppState, AppSchema> {
                     /**
                      * Terminate Initialization / Success
                      */
-                    return from([action.payload.firstVisit === false ? gotoSignup : gotoSignin, success]);
+                    return from([action.payload.firstVisit === false ? gotoSignup : gotoTutorial, success]);
                 }
                 /**
                  * Prepare second asynchronous request/response action (AUTH.AUTHENTICATE)

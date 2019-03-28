@@ -44,10 +44,9 @@ export class PageSigninComponent implements OnInit {
       password: this.passwordCtrl.value,
     };
     const authenticate = this.auth.zstore.authenticate.request(credentials, ['PageSigninComponent@signin']);
-    this.auth.finish(authenticate).subscribe(({ action, status }) => {
+    this.auth.finish(authenticate).subscribe(({ status }) => {
       if (status === RESOLVE) {
-        const data = { credentials, user: action.payload };
-        this.app.zstore.goto.dispatchRequest({ target: '/home', data }, ['PageSigninComponent@signin']);
+        this.app.zstore.goto.dispatchRequest('/home', ['PageSigninComponent@signin']);
       }
     });
     this.auth.dispatch(authenticate);

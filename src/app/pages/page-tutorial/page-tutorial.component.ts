@@ -1,5 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { StorageStore } from 'src/z-stores/storage-z-store';
+import { AppStore } from 'src/z-stores/app-z-store';
+import { APP } from 'src/z-configs/app-z-config';
 
 @Component({
   selector: 'app-page-tutorial',
@@ -9,6 +11,7 @@ import { StorageStore } from 'src/z-stores/storage-z-store';
 export class PageTutorialComponent implements OnInit, OnDestroy {
 
   constructor(
+    public app: AppStore,
     public storage: StorageStore,
   ) { }
 
@@ -19,7 +22,11 @@ export class PageTutorialComponent implements OnInit, OnDestroy {
   }
 
   finishTutorial() {
-    this.storage.zstore.save.dispatchRequest({ firstVisit: false }, ['PageTutorialComponent@ngOnInit']);
+    this.storage.zstore.save.dispatchRequest({ firstVisit: false }, [
+      'PageTutorialComponent@ngOnInit',
+      { type: APP.GOTO_CORREL, data: 'signup' }
+    ]);
+    // this.app.zstore.goto.dispatchRequest('/signup');
   }
 
 }
