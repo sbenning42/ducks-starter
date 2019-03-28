@@ -9,9 +9,9 @@ import { asRequestType, hasCorrelationType, grabCorrelationType, asRequestResolv
 import { Router } from "@angular/router";
 import { concat, of, EMPTY, from } from "rxjs";
 import { Entries } from "src/z-configs/storage-z-config";
-import { Z_SYMBOL } from "src/z/enums";
+import { Z_SYMBOL, RESOLVE } from "src/z/enums";
 import { AuthStore } from "./auth-z-store";
-import { AuthUser } from "src/z-configs/auth-z-config";
+import { AuthUser, AuthCreds } from "src/z-configs/auth-z-config";
 
 @Injectable()
 export class AppStore extends ZStore<AppState, AppSchema> {
@@ -40,46 +40,51 @@ export class AppStore extends ZStore<AppState, AppSchema> {
     protected initialize$ = this.actions$.pipe(
         ofType(asRequestResolveType(APP.INITIALIZE_START)),
         mergeMap((initialize: Action) => {
+            /**
+             * Grab the correlation
+             */
             const init = grabCorrelationType(initialize, APP.INITIALIZE_CORREL);
-            const _goto = (target: string, data?: any) => this.zstore.goto.request({ target, data }, [init]);
+            /**
+             * Prepare all possible synchronous actions
+             */
+            const gotoTutorial = this.zstore.goto.request('/tutorial', [init]);
+            const gotoSignin = this.zstore.goto.request('/signin', [init]);
+            const gotoSignup = this.zstore.goto.request('/signup', [init]);
+            const gotoHome = this.zstore.goto.request('/home', [init]);
             const success = this.zstore.initializeSuccess.request(undefined, [init]);
             const failure = this.zstore.initializeFailure.request(undefined, [init]);
+            /**
+             * Prepare first asynchronous request/response action
+             */
             const getStorageReq = this.storage.zstore.get.request(undefined, [init]);
             const getStorageRes$ = this.finish(getStorageReq);
+            /**
+             * Prepare first followup
+             */
             const switchGetStorageResFn = ({ status, action }: { status: string, action: Action<Entries<any>> }) => {
-                const switchAuthResFn = ({ status, action }: { status: string, action: Action<{ user: AuthUser }> }) => {
-                    switch (status) {
-                        case Z_SYMBOL.RESOLVE:
-                            return from([_goto('/home', action.payload.user), success]);
-                        case Z_SYMBOL.ERROR:
-                        case Z_SYMBOL.CANCEL:
-                        default:
-                            return from([_goto('/signin'), success]);
-                    }
-                };
-                switch (status) {
-                    case Z_SYMBOL.RESOLVE: {
-                        if (action.payload.firstVisit !== false) {
-                            return from([_goto('/tutorial'), success]);
-                        } else if (!action.payload.credentials) {
-                            return from([_goto('/signup'), success]);
-                        } else {
-                            const authReq = this.auth.zstore.authenticate.request(
-                                action.payload.credentials, [init]
-                            );
-                            const authRes$ = this.finish(authReq);
-                            const switchAuthRes$ = authRes$.pipe(switchMap(switchAuthResFn));
-                            return concat(of(authReq), switchAuthRes$);
-                        }
-                    }
-                    case Z_SYMBOL.ERROR:
-                    case Z_SYMBOL.CANCEL:
-                    default:
-                        return from([_goto('/tutorial'), failure]);
+                /**
+                 * Prepare second asynchronous request/response action
+                 */
+                const authenticateReq = this.auth.zstore.authenticate.request(action.payload.credentials, [init]);
+                const authenticateRes$ = this.finish(authenticateReq);
+                /**
+                 * Prepare second followup
+                 */
+                const switchAuthenticateResFn = ({ status }) => from([status === RESOLVE ? gotoHome : gotoSignin, success]);
+                if (status !== RESOLVE) {
+                    return from([gotoTutorial, failure]);
+                } else if (!action.payload.credentials) {
+                    return from([action.payload.firstVisit === false ? gotoSignup : gotoSignin, success]);
                 }
+                /**
+                 * Dispatch second asynchronous request/response action + second followup
+                 */
+                return concat(of(authenticateReq), authenticateRes$.pipe(switchMap(switchAuthenticateResFn)));
             };
-            const switchGetStorage$ = getStorageRes$.pipe(switchMap(switchGetStorageResFn));
-            return concat(of(getStorageReq), switchGetStorage$);
+            /**
+             * Dispatch first asynchronous request/response action + first followup
+             */
+            return concat(of(getStorageReq), getStorageRes$.pipe(switchMap(switchGetStorageResFn)));
         }),
     );
 
@@ -165,7 +170,6 @@ export class AppStore extends ZStore<AppState, AppSchema> {
         hasCorrelationType(APP.LOAD_START_CORREL),
         filter((action: Action) => !action.type.includes(APP.LOAD_START)),
         map(action => grabCorrelationType(action, APP.LOAD_START_CORREL)),
-        filter(correlation => !!correlation),
         map(correlation => this.zstore.loadStart.request(correlation.data, [correlation]))
     );
 
@@ -175,7 +179,6 @@ export class AppStore extends ZStore<AppState, AppSchema> {
         hasCorrelationType(APP.LOAD_STOP_CORREL),
         filter((action: Action) => !action.type.includes(APP.LOAD_STOP)),
         map(action => grabCorrelationType(action, APP.LOAD_STOP_CORREL)),
-        filter(correlation => !!correlation),
         map(correlation => this.zstore.loadStop.request(undefined, [correlation]))
     );
     
@@ -185,7 +188,6 @@ export class AppStore extends ZStore<AppState, AppSchema> {
         hasCorrelationType(APP.LOAD_CLEAR_CORREL),
         filter((action: Action) => !action.type.includes(APP.LOAD_CLEAR)),
         map(action => grabCorrelationType(action, APP.LOAD_CLEAR_CORREL)),
-        filter(correlation => !!correlation),
         map(correlation => this.zstore.loadClear.request(undefined, [correlation]))
     );
 
@@ -195,7 +197,6 @@ export class AppStore extends ZStore<AppState, AppSchema> {
         hasCorrelationType(APP.ERROR_START_CORREL),
         filter((action: Action) => !action.type.includes(APP.ERROR_START)),
         map(action => grabCorrelationType(action, APP.ERROR_START_CORREL)),
-        filter(correlation => !!correlation),
         map(correlation => this.zstore.errorStart.request(correlation.data, [correlation]))
     );
 
@@ -205,7 +206,6 @@ export class AppStore extends ZStore<AppState, AppSchema> {
         hasCorrelationType(APP.ERROR_STOP_CORREL),
         filter((action: Action) => !action.type.includes(APP.ERROR_STOP)),
         map(action => grabCorrelationType(action, APP.ERROR_STOP_CORREL)),
-        filter(correlation => !!correlation),
         map(correlation => this.zstore.errorStop.request(undefined, [correlation]))
     );
 
@@ -215,7 +215,6 @@ export class AppStore extends ZStore<AppState, AppSchema> {
         hasCorrelationType(APP.ERROR_CLEAR_CORREL),
         filter((action: Action) => !action.type.includes(APP.ERROR_CLEAR)),
         map(action => grabCorrelationType(action, APP.ERROR_CLEAR_CORREL)),
-        filter(correlation => !!correlation),
         map(correlation => this.zstore.errorClear.request(undefined, [correlation]))
     );
 }

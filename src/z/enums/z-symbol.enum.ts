@@ -13,3 +13,8 @@ export enum Z_SYMBOL {
     ASYNC_START_CORREL = '@z-task-async-start',
     ASYNC_STOP_CORREL = '@z-task-async-stop',
 }
+
+export const REQUEST = Z_SYMBOL.REQUEST;
+export const CANCEL = Z_SYMBOL.CANCEL;
+export const ERROR = Z_SYMBOL.ERROR;
+export const RESOLVE = Z_SYMBOL.RESOLVE;
